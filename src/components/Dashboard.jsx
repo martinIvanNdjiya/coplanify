@@ -141,11 +141,51 @@ const Dashboard = () => {
                 {/* Ajoute plus de cartes ici */}
               </div>
             </section>
+                    {/* Section Sondages */}
+                    <section className="mt-12">
+                <h2 className="text-5xl font-extrabold text-white drop-shadow-md mb-6">Sondages récents</h2>
+                {/* Grille de cartes sondages */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="bg-white bg-opacity-70 rounded-xl p-6 transition duration-300">
+                    <h3 className="text-2xl font-bold text-black mb-4">Destination préférée ?</h3>
+                    <p className="text-lg text-gray-800">📊 Statut : Ouvert</p>
+                  </div>
+                </div>
+              </section>
+              {/* Section Amis connectés */}
+              <section className="mt-12">
+                <h2 className="text-5xl font-extrabold text-white drop-shadow-md mb-6">Amis connectés</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {/* Exemple d'ami connecté */}
+                  <div className="flex items-center bg-white bg-opacity-70 rounded-lg p-4 shadow-md hover:shadow-lg transition duration-300">
+                    <img
+                      src="./friend1.jpg" // Remplace par l'image de profil
+                      alt="Profil"
+                      className="w-12 h-12 rounded-full border-2 border-blue-500 mr-4"
+                    />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">Alice Dupont</h3>
+                      <p className="text-sm text-gray-600">🟢 En ligne</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center bg-white bg-opacity-70 rounded-lg p-4 shadow-md hover:shadow-lg transition duration-300">
+                    <img
+                      src="./friend2.jpg" // Remplace par l'image de profil
+                      alt="Profil"
+                      className="w-12 h-12 rounded-full border-2 border-blue-500 mr-4"
+                    />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">Jean Martin</h3>
+                      <p className="text-sm text-gray-600">🟢 En ligne</p>
+                    </div>
+                  </div>
+                  {/* Ajoute plus de cartes d'amis connectés ici */}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+        </div>
   );
-};
-
+}
 export default Dashboard;
