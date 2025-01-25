@@ -1,9 +1,59 @@
+import { useState } from "react";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import app from "../config/firebase-config";
+
 const Register = () => {
+  const auth = getAuth(app);
+  const storage = getStorage(app);
+  const db = getFirestore(app);
+  const navigate = useNavigate();
+
+  const [prenom, setPrenom] = useState("");
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [photo, setPhoto] = useState(null);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      // Création de l'utilisateur avec email et mot de passe
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Téléchargement de la photo de profil dans Firebase Storage
+      let photoURL = "";
+      if (photo) {
+        const photoRef = ref(storage, `profilePictures/${user.uid}`);
+        await uploadBytes(photoRef, photo);
+        photoURL = await getDownloadURL(photoRef);
+      }
+
+      // Sauvegarde des informations utilisateur dans Firestore
+      await addDoc(collection(db, "users"), {
+        uid: user.uid,
+        prenom,
+        nom,
+        email,
+        photoProfil: photoURL,
+      });
+
+      console.log("Utilisateur enregistré avec succès !");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Erreur lors de l'inscription :", error);
+      alert("Échec de l'inscription. Veuillez réessayer.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row-reverse items-center bg-gray-100">
       {/* Section droite avec l'image */}
       <div className="lg:w-1/2 w-full h-64 lg:h-screen relative overflow-hidden">
-      <video
+        <video
           className="absolute top-0 left-0 w-full h-full object-cover"
           src="./login.mp4" // Remplace par ton chemin vidéo
           autoPlay
@@ -28,7 +78,7 @@ const Register = () => {
             Rejoignez Coplanify et commencez à planifier vos voyages dès
             aujourd&apos;hui !
           </p>
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleRegister}>
             {/* Prénom */}
             <div>
               <label
@@ -40,6 +90,8 @@ const Register = () => {
               <input
                 type="text"
                 id="prenom"
+                value={prenom}
+                onChange={(e) => setPrenom(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Entrez votre prénom"
                 required
@@ -57,6 +109,8 @@ const Register = () => {
               <input
                 type="text"
                 id="nom"
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Entrez votre nom"
                 required
@@ -74,6 +128,8 @@ const Register = () => {
               <input
                 type="email"
                 id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Entrez votre e-mail"
                 required
@@ -91,6 +147,8 @@ const Register = () => {
               <input
                 type="password"
                 id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Entrez votre mot de passe"
                 required
@@ -108,6 +166,7 @@ const Register = () => {
               <input
                 type="file"
                 id="photo"
+                onChange={(e) => setPhoto(e.target.files[0])}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
