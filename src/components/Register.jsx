@@ -3,7 +3,7 @@ import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import app from "../config/firebase-config";
+import {app} from "../config/firebase-config";
 
 const Register = () => {
   const auth = getAuth(app);

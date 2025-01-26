@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, query, collection, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import app from "../config/firebase-config";
+import {app} from "../config/firebase-config";
 
 const Profile = () => {
   const auth = getAuth(app);

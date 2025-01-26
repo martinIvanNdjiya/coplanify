@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getAuth, signOut } from 'firebase/auth';
-import app from '../config/firebase-config';
+import { app } from '../config/firebase-config';
+
 
 const LandingPage = () => {
   const auth = getAuth(app);
@@ -41,16 +42,6 @@ const LandingPage = () => {
                   <li>
                     <Link to="/voyages" className="text-lg text-gray-700 hover:text-gray-900">
                       Voyages
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/sondages" className="text-lg text-gray-700 hover:text-gray-900">
-                      Sondages
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">
-                      Chat
                     </Link>
                   </li>
                 </ul>
