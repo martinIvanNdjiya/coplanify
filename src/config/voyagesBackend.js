@@ -36,6 +36,7 @@ app.get("/api/search", async (request, response) => {
             destinationLocationCode: query.destination,
             departureDate: query.departureDate,
             adults: query.adults,
+            travelClass: query.travelClass,
             ...(query.returnDate ? { returnDate: query.returnDate } : {}),
         });
         response.json(data);

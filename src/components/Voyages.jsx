@@ -1,257 +1,295 @@
-import { useState } from 'react';
+import {useState, useEffect, useRef} from 'react';
 
 const Voyages = () => {
-    const [formData, setFormData] = useState({
-        origin: '',
-        destination: '',
-        flightType: 'one-way',
-        departureDate: '',
-        returnDate: '',
-        adults: 1,
-    });
+    const [origin, setOrigin] = useState("");
+    const [destination, setDestination] = useState("");
+    const [flightType, setFlightType] = useState("one-way");
+    const [departureDate, setDepartureDate] = useState("");
+    const [returnDate, setReturnDate] = useState("");
+    const [showReturnDate, setShowReturnDate] = useState(false);
+    const [travelClass, setTravelClass] = useState("ECONOMY");
+    const [adults, setAdults] = useState(1);
+    const [searchDisabled, setSearchDisabled] = useState(true);
+    const [results, setResults] = useState([]);
+    const [originCityCodes, setOriginCityCodes] = useState({});
+    const [destinationCityCodes, setDestinationCityCodes] = useState({});
+    const [originOptions, setOriginOptions] = useState([]);
+    const [destinationOptions, setDestinationOptions] = useState([]);
 
-    const [originSuggestions, setOriginSuggestions] = useState([]);
-    const [destinationSuggestions, setDestinationSuggestions] = useState([]);
-    const [isSearchEnabled, setIsSearchEnabled] = useState(false);
-    const [searchResults, setSearchResults] = useState([]); // State for search results
+    const autocompleteTimeout = useRef(null);
+    const debounceTime = 500;
 
+    useEffect(() => {
+        const isFormValid =
+            origin !== "" &&
+            destination !== "" &&
+            departureDate !== "" &&
+            (flightType === "one-way" || (flightType === "round-trip" && returnDate !== "")) &&
+            adults > 0;
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prevData) => {
-            const newData = { ...prevData, [name]: value };
-            checkFormCompletion(newData);
-            return newData;
-        });
+        setSearchDisabled(!isFormValid);
+    }, [origin, destination, flightType, departureDate, returnDate, adults]);
+
+    const reset = () => {
+        setOrigin("");
+        setDestination("");
+        setFlightType("one-way");
+        setDepartureDate("");
+        setReturnDate("");
+        setShowReturnDate(false);
+        setTravelClass("ECONOMY");
+        setAdults(1);
+        setSearchDisabled(true);
     };
 
-    const checkFormCompletion = (data) => {
-        const isComplete =
-            data.origin &&
-            data.destination &&
-            data.departureDate &&
-            (data.flightType === 'one-way' || data.returnDate);
-        setIsSearchEnabled(isComplete);
+    const autocomplete = async (input, setCityCodes, setOptions) => {
+        if (autocompleteTimeout.current) {
+            clearTimeout(autocompleteTimeout.current);
+        }
+
+        autocompleteTimeout.current = setTimeout(async () => {
+            try {
+                const params = new URLSearchParams({ keyword: input });
+                const response = await fetch(`/api/autocomplete?${params}`);
+                    const data = await response.json();
+
+                    const cityCodes = {};
+                    const options = data.map((entry) => {
+                        cityCodes[entry.name.toLowerCase()] = entry.iataCode;
+                        return entry.name;
+                    });
+
+                    setCityCodes(cityCodes);
+                    setOptions(options);
+            } catch (error) {
+                console.error(error);
+            }
+        }, debounceTime);
     };
 
-    const handleFlightTypeChange = (e) => {
-        const { value } = e.target;
-        setFormData((prevData) => {
-            const newData = { ...prevData, flightType: value };
-            if (value === 'one-way') newData.returnDate = '';
-            checkFormCompletion(newData);
-            return newData;
-        });
-    };
+    useEffect(() => {
+        if (origin) {
+            autocomplete(origin, setOriginCityCodes, setOriginOptions);
+        }
+    }, [origin]);
 
-    const handleSearchClick = async () => {
+    useEffect(() => {
+        if (destination) {
+            autocomplete(destination, setDestinationCityCodes, setDestinationOptions);
+        }
+    }, [destination]);
+
+    const search = async () => {
         try {
+            const returns = flightType === "round-trip";
             const params = new URLSearchParams({
-                origin: formData.origin,
-                destination: formData.destination,
-                departureDate: formData.departureDate,
-                adults: formData.adults,
-                ...(formData.flightType === 'round-trip' && {returnDate: formData.returnDate}),
+                origin: originCityCodes[origin.toLowerCase()],
+                destination: destinationCityCodes[destination.toLowerCase()],
+                departureDate: departureDate,
+                adults: Math.abs(parseInt(adults)),
+                travelClass: travelClass,
+                ...(returns ? { returnDate: returnDate } : {}),
             });
-
             const response = await fetch(`/api/search?${params}`);
             const data = await response.json();
-            setSearchResults(data);
-
-
-            if (data.length === 0) {
-                alert('No flights found.');
-            }
+            setResults(data);
         } catch (error) {
-            console.error('Flight search error:', error);
-            alert('Something went wrong while fetching flight details. Please try again.');
+            console.error(error);
         }
     };
 
-    const [autocompleteTimeout, setAutocompleteTimeout] = useState(null);
-
-    const autocomplete = async (keyword, field) => {
-        clearTimeout(autocompleteTimeout);
-        setAutocompleteTimeout(setTimeout(async () => {
-            try {
-                const response = await fetch(`/api/autocomplete?keyword=${keyword}`);
-                const data = await response.json();
-                if (field === 'origin') {
-                    setOriginSuggestions(data);
-                } else if (field === 'destination') {
-                    setDestinationSuggestions(data);
-                }
-            } catch (error) {
-                console.error('Autocomplete error:', error);
-            }
-        }, 300));
-    };
-
     return (
-        <div className="container mx-auto p-6">
-            <div className="card bg-white shadow-lg p-6 mb-6">
-                <h5 className="text-xl font-bold mb-4">Locations</h5>
-                <div className="flex space-x-4">
-                    <div className="flex-1">
-                        <label htmlFor="origin" className="block text-sm font-medium text-gray-700">
-                            Origin
-                        </label>
-                        <input
-                            type="text"
-                            id="origin"
-                            name="origin"
-                            value={formData.origin}
-                            onChange={(e) => {
-                                handleInputChange(e);
-                                autocomplete(e.target.value, 'origin');
-                            }}
-                            className="mt-2 p-2 w-full border rounded-lg"
-                            placeholder="Location"
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <label htmlFor="destination" className="block text-sm font-medium text-gray-700">
-                            Destination
-                        </label>
-                        <input
-                            type="text"
-                            id="destination"
-                            name="destination"
-                            value={formData.destination}
-                            onChange={(e) => {
-                                handleInputChange(e);
-                                autocomplete(e.target.value, 'destination');
-                            }}
-                            className="mt-2 p-2 w-full border rounded-lg"
-                            placeholder="Location"
-                        />
-                        <datalist id="destination-options">
-                            {destinationSuggestions.map((suggestion) => (
-                                <option key={suggestion.iataCode} value={suggestion.name}/>
-                            ))}
-                        </datalist>
+        <div className="container mx-auto p-4">
+            {/* Locations Card */}
+            <div className="my-2 card shadow-md rounded-lg">
+                <div className="card-body">
+                    <h5 className="card-title text-xl font-semibold mb-4">Locations</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Origin */}
+                        <div>
+                            <div className="mb-2">
+                                <label htmlFor="origin-input" className="form-label block text-sm font-medium">Origin</label>
+                                <div className="input-group flex items-center">
+                                    <span className="input-group-text p-2 bg-gray-200 text-gray-700">
+                                        <i className="bi-pin-map"></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        className="form-control p-2 border rounded-md w-full"
+                                        placeholder="Location"
+                                        value={origin}
+                                        onChange={(e) => {
+                                            setOrigin(e.target.value);
+                                        }}
+                                    />
+                                    <datalist>
+                                        {originOptions.map((option, index) => (
+                                            <option key={index} value={option}></option>
+                                        ))}
+                                    </datalist>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Destination */}
+                        <div>
+                            <div className="mb-2">
+                                <label htmlFor="destination-input" className="form-label block text-sm font-medium">Destination</label>
+                                <div className="input-group flex items-center">
+                                    <span className="input-group-text p-2 bg-gray-200 text-gray-700">
+                                        <i className="bi-pin-map-fill"></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        className="form-control p-2 border rounded-md w-full"
+                                        placeholder="Location"
+                                        value={destination}
+                                        onChange={(e) => {
+                                            setDestination(e.target.value);
+                                        }}
+                                    />
+                                    <datalist >
+                                        {destinationOptions.map((option, index) => (
+                                            <option key={index} value={option}></option>
+                                        ))}
+                                    </datalist>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex space-x-4 mb-6">
-                <div className="flex-1">
-                    <div className="card bg-white shadow-lg p-6">
-                    <h5 className="text-xl font-bold mb-4">Dates</h5>
-                        <div className="mb-4">
-                            <label htmlFor="flight-type" className="block text-sm font-medium text-gray-700">
-                                Flight Type
-                            </label>
-                            <select
-                                id="flight-type"
-                                name="flightType"
-                                value={formData.flightType}
-                                onChange={handleFlightTypeChange}
-                                className="mt-2 p-2 w-full border rounded-lg"
-                            >
-                                <option value="one-way">One-way</option>
-                                <option value="round-trip">Round-trip</option>
-                            </select>
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="departureDate" className="block text-sm font-medium text-gray-700">
-                                Departure Date
-                            </label>
-                            <input
-                                type="date"
-                                id="departureDate"
-                                name="departureDate"
-                                value={formData.departureDate}
-                                onChange={handleInputChange}
-                                className="mt-2 p-2 w-full border rounded-lg"
-                            />
-                        </div>
-                        {formData.flightType === 'round-trip' && (
+            {/* Dates Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="mb-2">
+                    <div className="h-full card shadow-md rounded-lg">
+                        <div className="card-body">
+                            <h5 className="card-title text-xl font-semibold mb-4">Dates</h5>
                             <div className="mb-4">
-                                <label htmlFor="returnDate" className="block text-sm font-medium text-gray-700">
-                                    Return Date
-                                </label>
+                                <label htmlFor="flight-type-select" className="form-label block text-sm font-medium">Flight Type</label>
+                                <select
+                                    id="flight-type-select"
+                                    className="form-select p-2 border rounded-md w-full"
+                                    value={flightType}
+                                    onChange={(e) => {
+                                        setFlightType(e.target.value);
+                                        setShowReturnDate(e.target.value === "round-trip");
+                                    }}
+                                >
+                                    <option value="one-way">One-way</option>
+                                    <option value="round-trip">Round-trip</option>
+                                </select>
+                            </div>
+
+                            <div className="mb-4">
+                                <label htmlFor="departure-date-input" className="form-label block text-sm font-medium">Departure Date</label>
                                 <input
                                     type="date"
-                                    id="returnDate"
-                                    name="returnDate"
-                                    value={formData.returnDate}
-                                    onChange={handleInputChange}
-                                    className="mt-2 p-2 w-full border rounded-lg"
+                                    className="form-control p-2 border rounded-md w-full"
+                                    value={departureDate}
+                                    onChange={(e) => setDepartureDate(e.target.value)}
                                 />
                             </div>
-                        )}
-                    </div>
-                </div>
 
-                <div className="flex-1">
-                    <div className="card bg-white shadow-lg p-6">
-                        <h5 className="text-xl font-bold mb-4">Details</h5>
-                        <div className="mb-4">
-                            <label htmlFor="adults" className="block text-sm font-medium text-gray-700">
-                                Adults
-                            </label>
-                            <input
-                                type="number"
-                                id="adults"
-                                name="adults"
-                                value={formData.adults}
-                                onChange={handleInputChange}
-                                min="0"
-                                className="mt-2 p-2 w-full border rounded-lg"
-                            />
+                            {showReturnDate && (
+                                <div className="mb-4">
+                                    <label htmlFor="return-date-input" className="form-label block text-sm font-medium">Return Date</label>
+                                    <input
+                                        type="date"
+                                        className="form-control p-2 border rounded-md w-full"
+                                        value={returnDate}
+                                        onChange={(e) => setReturnDate(e.target.value)}
+                                    />
+                                </div>
+                            )}
                         </div>
+                    </div>
+                </div>
 
+                {/* Details Card */}
+                <div className="mb-2">
+                    <div className="h-full card shadow-md rounded-lg">
+                        <div className="card-body">
+                            <h5 className="card-title text-xl font-semibold mb-4">Details</h5>
+
+                            {/* Travel Class */}
+                            <div className="mb-4">
+                                <label htmlFor="travel-class-select" className="form-label block text-sm font-medium">Travel Class</label>
+                                <select
+                                    id="travel-class-select"
+                                    className="form-select p-2 border rounded-md w-full"
+                                    value={travelClass}
+                                    onChange={(e) => setTravelClass(e.target.value)}
+                                >
+                                    <option value="ECONOMY">Economy</option>
+                                    <option value="PREMIUM_ECONOMY">Premium Economy</option>
+                                    <option value="BUSINESS">Business</option>
+                                    <option value="FIRST">First</option>
+                                </select>
+                            </div>
+
+                            {/* Passengers */}
+                            <div className="mb-4">
+                                <label htmlFor="adults-input" className="form-label block text-sm font-medium">Adults</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="form-control p-2 border rounded-md w-full"
+                                    value={adults}
+                                    onChange={(e) => setAdults(parseInt(e.target.value))}
+                                />
+                                <span className="form-text text-sm text-gray-500">12 years old and older</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mb-6">
-                <button
-                    onClick={handleSearchClick}
-                    disabled={!isSearchEnabled}
-                    className={`w-full py-3 px-4 bg-blue-500 text-white rounded-lg ${!isSearchEnabled && 'opacity-50 cursor-not-allowed'}`}
-                >
-                    Search
-                </button>
-            </div>
+            {/* Search Button */}
+            <button
+                className={`w-full py-2 mt-4 bg-blue-500 text-white rounded-md ${searchDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={searchDisabled}
+                onClick={search}
+            >
+                Search
+            </button>
 
-            {/* Search results */}
-            {searchResults.length > 0 && (
-                <div className="results">
-                    <h3 className="text-2xl font-semibold mb-4">Search Results</h3>
-                    <ul className="space-y-4">
-                        {searchResults.map(({ itineraries, price }, idx) => {
-                            const priceLabel = `${price.total} ${price.currency}`;
-                            return (
-                                <li key={idx} className="flex flex-col sm:flex-row justify-between items-center bg-white shadow-lg p-4 rounded-lg">
-                                    <div className="flex flex-col sm:flex-row">
-                                        {itineraries.map((itinerary, index) => {
-                                            const [, hours, minutes] = itinerary.duration.match(/(\d+)H(\d+)?/);
-                                            const travelPath = itinerary.segments
-                                                .flatMap(({ arrival, departure }, index, segments) => {
-                                                    if (index === segments.length - 1) {
-                                                        return [departure.iataCode, arrival.iataCode];
-                                                    }
-                                                    return [departure.iataCode];
-                                                })
-                                                .join(' → ');
-
-                                            return (
-                                                <div key={index} className="flex flex-col m-2 sm:w-1/3">
-                                                    <small className="text-sm text-gray-500">{index === 0 ? 'Outbound' : 'Return'}</small>
-                                                    <span className="font-bold">{travelPath}</span>
-                                                    <div>{hours || 0}h {minutes || 0}m</div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <span className="bg-blue-500 text-white rounded-full px-4 py-1 text-lg">{priceLabel}</span>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </div>
+            {/* Display Results */}
+            {results.length > 0 && (
+                <ul>
+                    {results.map(({itineraries, price}, index) => {
+                        const priceLabel = `${price.total} ${price.currency}`;
+                        return (
+                            <li
+                                key={index}
+                                className="flex-column flex-sm-row list-group-item d-flex justify-content-between align-items-sm-center"
+                            >
+                                {itineraries.map((itinerary, index) => {
+                                    const [, hours, minutes] = itinerary.duration.match(/(\d+)H(\d+)?/);
+                                    const travelPath = itinerary.segments
+                                        .flatMap(({arrival, departure}, idx, segments) => {
+                                            if (idx === segments.length - 1) {
+                                                return [departure.iataCode, arrival.iataCode];
+                                            }
+                                            return [departure.iataCode];
+                                        })
+                                        .join(" → ");
+                                    return (
+                                        <div key={index} className="flex-column flex-1 m-2 d-flex">
+                                            <small className="text-muted">
+                                                {index === 0 ? "Outbound" : "Return"}
+                                            </small>
+                                            <span className="fw-bold">{travelPath}</span>
+                                            <div>{hours || 0}h {minutes || 0}m</div>
+                                        </div>
+                                    );
+                                })}
+                                <span className="bg-primary rounded-pill m-2 badge fs-6">{priceLabel}</span>
+                            </li>
+                        );
+                    })}
+                </ul>
             )}
         </div>
     );
