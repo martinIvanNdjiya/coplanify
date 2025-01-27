@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch } from "react-icons/fi";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiMessageSquare, FiSettings, FiSearch } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, query, collection, where, getDocs, onSnapshot } from "firebase/firestore";
@@ -71,6 +71,14 @@ const Dashboard = () => {
           <Link to="/voyages" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
             <FiAirplay className="mr-3 text-2xl" />
             Voyages
+          </Link>
+          <Link to="/sondages" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+            <FiSettings className="mr-3 text-2xl" />
+            Sondages
+          </Link>
+          <Link to="/chat" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+            <FiMessageSquare className="mr-3 text-2xl" />
+            Chat
           </Link>
           <Link to="/amis" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
             <FiUsers className="mr-3 text-2xl" />
