@@ -44,6 +44,16 @@ const LandingPage = () => {
                       Voyages
                     </Link>
                   </li>
+                  <li>	
+                    <Link to="/sondages" className="text-lg text-gray-700 hover:text-gray-900">	
+                      Sondages	
+                    </Link>	
+                  </li>	
+                  <li>	
+                    <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">	
+                      Chat	
+                    </Link>	
+                  </li>
                 </ul>
                 <button
                   onClick={handleLogout}
