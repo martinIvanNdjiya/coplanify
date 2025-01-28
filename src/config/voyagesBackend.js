@@ -1,51 +1,79 @@
-import Amadeus from "amadeus";
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
 import dotenv from 'dotenv';
+import Amadeus from "amadeus";
+
 dotenv.config();
 
 const app = express();
 const amadeus = new Amadeus({
-    clientId: 'pgggkfu2yO1Wg049eD6nonuL5jmGGAlA',
-    clientSecret: 'VNBhnePRZdEB2Rq4',
+  clientId: process.env.AMADEUS_CLIENT_ID,
+  clientSecret: process.env.AMADEUS_CLIENT_SECRET
 });
-app.use(bodyParser.json());
-const port = 3000;
 
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 app.use(express.static("public"));
 
-app.get("/api/autocomplete", async (request, response) => {
-    try {
-        const { query } = request;
-        const { data } = await amadeus.referenceData.locations.get({
-            keyword: query.keyword,
-            subType: Amadeus.location.city,
-        });
-        response.json(data);
-    } catch (error) {
-        console.error(error.response);
-        response.json([]);
+// Routes
+app.get("/api/autocomplete", async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    
+    if (!keyword || keyword.length < 2) {
+      return res.status(400).json({ 
+        error: "Le paramètre 'keyword' est requis (min 2 caractères)" 
+      });
     }
+
+    const { data } = await amadeus.referenceData.locations.get({
+      keyword,
+      subType: 'CITY,AIRPORT',
+      view: 'LIGHT'
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error('Amadeus API Error:', error.response?.data || error);
+    res.status(500).json({
+      error: true,
+      message: error.message,
+      errors: error.response?.data?.errors || []
+    });
+  }
 });
 
-app.get("/api/search", async (request, response) => {
-    try {
-        const { query } = request;
-        const { data } = await amadeus.shopping.flightOffersSearch.get({
-            originLocationCode: query.origin,
-            destinationLocationCode: query.destination,
-            departureDate: query.departureDate,
-            adults: query.adults,
-            travelClass: query.travelClass,
-            ...(query.returnDate ? { returnDate: query.returnDate } : {}),
-        });
-        response.json(data);
-    } catch (error) {
-        console.error(error.response);
-        response.json([]);
-    }
+app.get("/api/search", async (req, res) => {
+  try {
+    const params = {
+      originLocationCode: req.query.origin,
+      destinationLocationCode: req.query.destination,
+      departureDate: req.query.departureDate,
+      adults: parseInt(req.query.adults, 10),
+      travelClass: req.query.travelClass,
+      currencyCode: req.query.currency || 'USD',
+      nonStop: req.query.nonStop === 'true' 
+    };
+
+    const { data } = await amadeus.shopping.flightOffersSearch.get(params);
+    
+    res.json({ 
+      data: data,
+      meta: { count: data.length } 
+    });
+  } catch (error) {
+    const status = error.response?.statusCode || 500;
+    res.status(status).json({
+      error: true,
+      message: error.message,
+      errors: error.response?.data?.errors || []
+    });
+  }
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

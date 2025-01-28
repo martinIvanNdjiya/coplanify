@@ -1,295 +1,363 @@
-import {useState, useEffect, useRef} from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { format, parseISO, isValid } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { FiSearch, FiUsers, FiCalendar, FiArrowUpRight, FiClock, FiXCircle } from 'react-icons/fi';
+
+const useDebounce = (value, delay) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+};
+
+const FlightResultCard = ({ offer, currency }) => {
+    const parseDuration = (duration) => {
+        const [days, rest] = duration.includes('D') ? duration.split('D') : ['0', duration];
+        const [hours, minutes] = rest.replace('PT', '').split('H') || ['0', '0'];
+        return {
+            days: parseInt(days),
+            hours: parseInt(hours),
+            minutes: parseInt(minutes?.replace('M', '') || '0')
+        };
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-4 transition-transform hover:scale-[1.01]">
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-blue-600">
+                        {new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(offer.price.total)}
+                    </span>
+                    <span className="text-sm text-gray-500">({offer.numberOfBookableSeats} sièges restants)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    {offer.validatingAirlineCodes.map((code, idx) => (
+                        <span key={idx} className="bg-gray-100 px-2 py-1 rounded text-sm">
+                            {code}
+                        </span>
+                    ))}
+                </div>
+            </div>
+
+            {offer.itineraries.map((itinerary, idx) => {
+                const { hours, minutes } = parseDuration(itinerary.duration);
+                return (
+                    <div key={idx} className="mb-4 last:mb-0">
+                        <div className="flex items-center gap-2 mb-3 text-gray-600">
+                            <FiClock className="shrink-0" />
+                            <span className="font-medium">
+                                {idx === 0 ? 'Aller' : 'Retour'} • {hours}h {minutes}m
+                            </span>
+                        </div>
+
+                        {itinerary.segments.map((segment, segIdx) => (
+                            <div key={segIdx} className="flex items-center gap-4 py-2 border-t">
+                                <div className="shrink-0 w-20 text-sm">
+                                    {format(parseISO(segment.departure.at), 'HH:mm', { locale: fr })}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="font-medium">{segment.departure.iataCode} → {segment.arrival.iataCode}</div>
+                                    <div className="text-sm text-gray-500">{segment.carrierCode} {segment.aircraft.code}</div>
+                                </div>
+                                <div className="shrink-0 w-20 text-sm text-right">
+                                    {format(parseISO(segment.arrival.at), 'HH:mm', { locale: fr })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
 
 const Voyages = () => {
-    const [origin, setOrigin] = useState("");
-    const [destination, setDestination] = useState("");
-    const [flightType, setFlightType] = useState("one-way");
-    const [departureDate, setDepartureDate] = useState("");
-    const [returnDate, setReturnDate] = useState("");
-    const [showReturnDate, setShowReturnDate] = useState(false);
-    const [travelClass, setTravelClass] = useState("ECONOMY");
-    const [adults, setAdults] = useState(1);
-    const [searchDisabled, setSearchDisabled] = useState(true);
+    const [form, setForm] = useState({
+        origin: '',
+        destination: '',
+        flightType: 'one-way',
+        departureDate: '',
+        returnDate: '',
+        travelClass: 'ECONOMY',
+        adults: 1
+    });
+
     const [results, setResults] = useState([]);
-    const [originCityCodes, setOriginCityCodes] = useState({});
-    const [destinationCityCodes, setDestinationCityCodes] = useState({});
-    const [originOptions, setOriginOptions] = useState([]);
-    const [destinationOptions, setDestinationOptions] = useState([]);
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [cityCodes, setCityCodes] = useState({ origin: {}, destination: {} });
+    const [options, setOptions] = useState({ origin: [], destination: [] });
 
-    const autocompleteTimeout = useRef(null);
-    const debounceTime = 500;
+    const debouncedOrigin = useDebounce(form.origin, 300);
+    const debouncedDestination = useDebounce(form.destination, 300);
 
-    useEffect(() => {
-        const isFormValid =
-            origin !== "" &&
-            destination !== "" &&
-            departureDate !== "" &&
-            (flightType === "one-way" || (flightType === "round-trip" && returnDate !== "")) &&
-            adults > 0;
+    const validateField = (name, value) => {
 
-        setSearchDisabled(!isFormValid);
-    }, [origin, destination, flightType, departureDate, returnDate, adults]);
-
-    const reset = () => {
-        setOrigin("");
-        setDestination("");
-        setFlightType("one-way");
-        setDepartureDate("");
-        setReturnDate("");
-        setShowReturnDate(false);
-        setTravelClass("ECONOMY");
-        setAdults(1);
-        setSearchDisabled(true);
+        let error = '';
+        switch (name) {
+            case 'origin':
+            case 'destination':
+                if (!value) error = 'Ce champ est requis';
+                else if (!cityCodes[name][value.toLowerCase()]) {
+                    console.warn('Codes disponibles:', cityCodes[name]);
+                    error = 'Ville non reconnue';
+                  }
+                break;
+            case 'departureDate':
+                if (!isValid(new Date(value))) error = 'Date invalide';
+                break;
+            case 'returnDate':
+                if (form.flightType === 'round-trip' && new Date(value) <= new Date(form.departureDate)) {
+                    error = 'Doit être après la date de départ';
+                }
+                break;
+        }
+        setErrors(prev => ({ ...prev, [name]: error }));
+        return !error;
     };
 
-    const autocomplete = async (input, setCityCodes, setOptions) => {
-        if (autocompleteTimeout.current) {
-            clearTimeout(autocompleteTimeout.current);
-        }
+    const fetchAutocomplete = async (type, keyword) => {
+        if (!keyword || keyword.length < 2) return [];
 
-        autocompleteTimeout.current = setTimeout(async () => {
-            try {
-                const params = new URLSearchParams({ keyword: input });
-                const response = await fetch(`/api/autocomplete?${params}`);
-                    const data = await response.json();
-
-                    const cityCodes = {};
-                    const options = data.map((entry) => {
-                        cityCodes[entry.name.toLowerCase()] = entry.iataCode;
-                        return entry.name;
-                    });
-
-                    setCityCodes(cityCodes);
-                    setOptions(options);
-            } catch (error) {
-                console.error(error);
-            }
-        }, debounceTime);
-    };
-
-    useEffect(() => {
-        if (origin) {
-            autocomplete(origin, setOriginCityCodes, setOriginOptions);
-        }
-    }, [origin]);
-
-    useEffect(() => {
-        if (destination) {
-            autocomplete(destination, setDestinationCityCodes, setDestinationOptions);
-        }
-    }, [destination]);
-
-    const search = async () => {
         try {
-            const returns = flightType === "round-trip";
-            const params = new URLSearchParams({
-                origin: originCityCodes[origin.toLowerCase()],
-                destination: destinationCityCodes[destination.toLowerCase()],
-                departureDate: departureDate,
-                adults: Math.abs(parseInt(adults)),
-                travelClass: travelClass,
-                ...(returns ? { returnDate: returnDate } : {}),
-            });
-            const response = await fetch(`/api/search?${params}`);
+            const response = await fetch(`/api/autocomplete?keyword=${encodeURIComponent(keyword)}`);
+            if (!response.ok) throw new Error('Échec de la recherche');
             const data = await response.json();
-            setResults(data);
+
+            return data.reduce((acc, entry) => {
+                acc.options.push(`${entry.name} (${entry.iataCode})`);
+                acc.codes[`${entry.name} (${entry.iataCode})`.toLowerCase()] = entry.iataCode;
+                return acc;
+            }, { options: [], codes: {} });
         } catch (error) {
-            console.error(error);
+            console.error('Autocomplete error:', error);
+            return { options: [], codes: {} };
+        }
+    };
+
+    useEffect(() => {
+        const updateAutocomplete = async (type) => {
+            const { options: newOptions, codes } = await fetchAutocomplete(type, debouncedOrigin);
+            setOptions(prev => ({ ...prev, [type]: newOptions }));
+            setCityCodes(prev => ({ ...prev, [type]: codes }));
+        };
+
+        if (debouncedOrigin) updateAutocomplete('origin');
+    }, [debouncedOrigin]);
+
+    useEffect(() => {
+        const updateAutocomplete = async (type) => {
+            const { options: newOptions, codes } = await fetchAutocomplete(type, debouncedDestination);
+            setOptions(prev => ({ ...prev, [type]: newOptions }));
+            setCityCodes(prev => ({ ...prev, [type]: codes }));
+        };
+
+        if (debouncedDestination) updateAutocomplete('destination');
+    }, [debouncedDestination]);
+
+    const handleSearch = async () => {
+        const isValidForm = Object.keys(form).every(field => {
+            if (field === 'returnDate' && form.flightType === 'one-way') return true;
+            return validateField(field, form[field]);
+        });
+
+        if (!isValidForm) return;
+
+        setLoading(true);
+        try {
+            const params = new URLSearchParams({
+                origin: cityCodes.origin[form.origin.toLowerCase()],
+                destination: cityCodes.destination[form.destination.toLowerCase()],
+                departureDate: form.departureDate,
+                adults: form.adults,
+                travelClass: form.travelClass,
+                currency: 'EUR',
+                ...(form.flightType === 'round-trip' && { returnDate: form.returnDate })
+            });
+
+
+
+            const response = await fetch(`/api/search?${params}`);
+            const { data } = await response.json();
+            console.log('API Response:', data);
+            setResults(data?.offers || data || []);
+
+            if (!response.ok) throw new Error(data?.errors?.[0]?.detail || 'Erreur inconnue');
+            setResults(data || []);
+        } catch (error) {
+            setErrors({ general: error.message });
+            setResults([]);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="container mx-auto p-4">
-            {/* Locations Card */}
-            <div className="my-2 card shadow-md rounded-lg">
-                <div className="card-body">
-                    <h5 className="card-title text-xl font-semibold mb-4">Locations</h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Origin */}
-                        <div>
-                            <div className="mb-2">
-                                <label htmlFor="origin-input" className="form-label block text-sm font-medium">Origin</label>
-                                <div className="input-group flex items-center">
-                                    <span className="input-group-text p-2 bg-gray-200 text-gray-700">
-                                        <i className="bi-pin-map"></i>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control p-2 border rounded-md w-full"
-                                        placeholder="Location"
-                                        value={origin}
-                                        onChange={(e) => {
-                                            setOrigin(e.target.value);
-                                        }}
-                                    />
-                                    <datalist>
-                                        {originOptions.map((option, index) => (
-                                            <option key={index} value={option}></option>
-                                        ))}
-                                    </datalist>
-                                </div>
-                            </div>
+        <div className="max-w-4xl mx-auto p-4">
+            {/* Search Form */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Départ de</label>
+                        <div className="relative">
+                            <input
+                                list="originOptions"
+                                value={form.origin}
+                                onChange={(e) => setForm(prev => ({ ...prev, origin: e.target.value }))}
+                                className={`w-full p-3 rounded-lg border ${errors.origin ? 'border-red-500' : 'border-gray-200'} focus:ring-2 focus:ring-blue-400`}
+                                placeholder="Paris (CDG)"
+                            />
+                            <datalist id="originOptions">
+                                {options.origin.map((opt, idx) => <option key={idx} value={opt} />)}
+                            </datalist>
+                            {errors.origin && <p className="text-red-500 text-sm mt-1">{errors.origin}</p>}
                         </div>
+                    </div>
 
-                        {/* Destination */}
-                        <div>
-                            <div className="mb-2">
-                                <label htmlFor="destination-input" className="form-label block text-sm font-medium">Destination</label>
-                                <div className="input-group flex items-center">
-                                    <span className="input-group-text p-2 bg-gray-200 text-gray-700">
-                                        <i className="bi-pin-map-fill"></i>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control p-2 border rounded-md w-full"
-                                        placeholder="Location"
-                                        value={destination}
-                                        onChange={(e) => {
-                                            setDestination(e.target.value);
-                                        }}
-                                    />
-                                    <datalist >
-                                        {destinationOptions.map((option, index) => (
-                                            <option key={index} value={option}></option>
-                                        ))}
-                                    </datalist>
-                                </div>
-                            </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Destination</label>
+                        <div className="relative">
+                            <input
+                                list="destinationOptions"
+                                value={form.destination}
+                                onChange={(e) => setForm(prev => ({ ...prev, destination: e.target.value }))}
+                                className={`w-full p-3 rounded-lg border ${errors.destination ? 'border-red-500' : 'border-gray-200'} focus:ring-2 focus:ring-blue-400`}
+                                placeholder="New York (JFK)"
+                            />
+                            <datalist id="destinationOptions">
+                                {options.destination.map((opt, idx) => <option key={idx} value={opt} />)}
+                            </datalist>
+                            {errors.destination && <p className="text-red-500 text-sm mt-1">{errors.destination}</p>}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Dates Card */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="mb-2">
-                    <div className="h-full card shadow-md rounded-lg">
-                        <div className="card-body">
-                            <h5 className="card-title text-xl font-semibold mb-4">Dates</h5>
-                            <div className="mb-4">
-                                <label htmlFor="flight-type-select" className="form-label block text-sm font-medium">Flight Type</label>
-                                <select
-                                    id="flight-type-select"
-                                    className="form-select p-2 border rounded-md w-full"
-                                    value={flightType}
-                                    onChange={(e) => {
-                                        setFlightType(e.target.value);
-                                        setShowReturnDate(e.target.value === "round-trip");
-                                    }}
-                                >
-                                    <option value="one-way">One-way</option>
-                                    <option value="round-trip">Round-trip</option>
-                                </select>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Date de départ</label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={form.departureDate}
+                                onChange={(e) => setForm(prev => ({ ...prev, departureDate: e.target.value }))}
+                                className={`w-full p-3 rounded-lg border ${errors.departureDate ? 'border-red-500' : 'border-gray-200'}`}
+                                min={format(new Date().setHours(0,0,0,0), 'yyyy-MM-dd')}
+                            />
+                            {errors.departureDate && <p className="text-red-500 text-sm mt-1">{errors.departureDate}</p>}
+                        </div>
+                    </div>
 
-                            <div className="mb-4">
-                                <label htmlFor="departure-date-input" className="form-label block text-sm font-medium">Departure Date</label>
+                    {form.flightType === 'round-trip' && (
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">Date de retour</label>
+                            <div className="relative">
                                 <input
                                     type="date"
-                                    className="form-control p-2 border rounded-md w-full"
-                                    value={departureDate}
-                                    onChange={(e) => setDepartureDate(e.target.value)}
+                                    value={form.returnDate}
+                                    onChange={(e) => setForm(prev => ({ ...prev, returnDate: e.target.value }))}
+                                    className={`w-full p-3 rounded-lg border ${errors.returnDate ? 'border-red-500' : 'border-gray-200'}`}
+                                    min={form.departureDate}
                                 />
+                                {errors.returnDate && <p className="text-red-500 text-sm mt-1">{errors.returnDate}</p>}
                             </div>
+                        </div>
+                    )}
 
-                            {showReturnDate && (
-                                <div className="mb-4">
-                                    <label htmlFor="return-date-input" className="form-label block text-sm font-medium">Return Date</label>
-                                    <input
-                                        type="date"
-                                        className="form-control p-2 border rounded-md w-full"
-                                        value={returnDate}
-                                        onChange={(e) => setReturnDate(e.target.value)}
-                                    />
-                                </div>
-                            )}
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Type de vol</label>
+                        <select
+                            value={form.flightType}
+                            onChange={(e) => setForm(prev => ({ ...prev, flightType: e.target.value }))}
+                            className="w-full p-3 rounded-lg border border-gray-200"
+                        >
+                            <option value="one-way">Aller simple</option>
+                            <option value="round-trip">Aller-retour</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Classe</label>
+                        <select
+                            value={form.travelClass}
+                            onChange={(e) => setForm(prev => ({ ...prev, travelClass: e.target.value }))}
+                            className="w-full p-3 rounded-lg border border-gray-200"
+                        >
+                            <option value="ECONOMY">Économique</option>
+                            <option value="PREMIUM_ECONOMY">Premium Économique</option>
+                            <option value="BUSINESS">Affaires</option>
+                            <option value="FIRST">Première</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Passagers</label>
+                        <div className="flex items-center gap-2">
+                            <FiUsers className="text-gray-400" />
+                            <input
+                                type="number"
+                                min="1"
+                                value={form.adults}
+                                onChange={(e) => setForm(prev => ({ ...prev, adults: Math.max(1, e.target.value) }))}
+                                className="w-full p-3 rounded-lg border border-gray-200"
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Details Card */}
-                <div className="mb-2">
-                    <div className="h-full card shadow-md rounded-lg">
-                        <div className="card-body">
-                            <h5 className="card-title text-xl font-semibold mb-4">Details</h5>
+                <button
+                    onClick={handleSearch}
+                    disabled={loading}
+                    className={`w-full py-4 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2
+            ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+                >
+                    {loading ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    ) : (
+                        <>
+                            <FiSearch className="text-lg" />
+                            Rechercher des vols
+                        </>
+                    )}
+                </button>
 
-                            {/* Travel Class */}
-                            <div className="mb-4">
-                                <label htmlFor="travel-class-select" className="form-label block text-sm font-medium">Travel Class</label>
-                                <select
-                                    id="travel-class-select"
-                                    className="form-select p-2 border rounded-md w-full"
-                                    value={travelClass}
-                                    onChange={(e) => setTravelClass(e.target.value)}
-                                >
-                                    <option value="ECONOMY">Economy</option>
-                                    <option value="PREMIUM_ECONOMY">Premium Economy</option>
-                                    <option value="BUSINESS">Business</option>
-                                    <option value="FIRST">First</option>
-                                </select>
-                            </div>
-
-                            {/* Passengers */}
-                            <div className="mb-4">
-                                <label htmlFor="adults-input" className="form-label block text-sm font-medium">Adults</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className="form-control p-2 border rounded-md w-full"
-                                    value={adults}
-                                    onChange={(e) => setAdults(parseInt(e.target.value))}
-                                />
-                                <span className="form-text text-sm text-gray-500">12 years old and older</span>
-                            </div>
-                        </div>
+                {errors.general && (
+                    <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2">
+                        <FiXCircle />
+                        {errors.general}
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Search Button */}
-            <button
-                className={`w-full py-2 mt-4 bg-blue-500 text-white rounded-md ${searchDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={searchDisabled}
-                onClick={search}
-            >
-                Search
-            </button>
+            {/* Resultat */}
+            {results.length > 0 ? (
+                <div className="space-y-4">
+                    {results.map((offer, idx) => (
+                        <FlightResultCard key={idx} offer={offer} currency="EUR" />
+                    ))}
+                </div>
+            ) : (
+                !loading && (
+                    <div className="text-center py-12 text-gray-500">
+                        <FiSearch className="mx-auto text-3xl mb-4" />
+                        <p>Aucun vol trouvé. Essayez de modifier vos critères de recherche.</p>
+                    </div>
+                )
+            )}
 
-            {/* Display Results */}
-            {results.length > 0 && (
-                <ul>
-                    {results.map(({itineraries, price}, index) => {
-                        const priceLabel = `${price.total} ${price.currency}`;
-                        return (
-                            <li
-                                key={index}
-                                className="flex-column flex-sm-row list-group-item d-flex justify-content-between align-items-sm-center"
-                            >
-                                {itineraries.map((itinerary, index) => {
-                                    const [, hours, minutes] = itinerary.duration.match(/(\d+)H(\d+)?/);
-                                    const travelPath = itinerary.segments
-                                        .flatMap(({arrival, departure}, idx, segments) => {
-                                            if (idx === segments.length - 1) {
-                                                return [departure.iataCode, arrival.iataCode];
-                                            }
-                                            return [departure.iataCode];
-                                        })
-                                        .join(" → ");
-                                    return (
-                                        <div key={index} className="flex-column flex-1 m-2 d-flex">
-                                            <small className="text-muted">
-                                                {index === 0 ? "Outbound" : "Return"}
-                                            </small>
-                                            <span className="fw-bold">{travelPath}</span>
-                                            <div>{hours || 0}h {minutes || 0}m</div>
-                                        </div>
-                                    );
-                                })}
-                                <span className="bg-primary rounded-pill m-2 badge fs-6">{priceLabel}</span>
-                            </li>
-                        );
-                    })}
-                </ul>
+            {/* Loading */}
+            {loading && (
+                <div className="space-y-4 animate-pulse">
+                    {[...Array(3)].map((_, idx) => (
+                        <div key={idx} className="bg-white rounded-xl shadow-lg p-6 h-32"></div>
+                    ))}
+                </div>
             )}
         </div>
     );
