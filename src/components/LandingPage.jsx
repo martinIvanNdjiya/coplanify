@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getAuth, signOut } from 'firebase/auth';
 import { app } from '../config/firebase-config';
-
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 
 const LandingPage = () => {
   const auth = getAuth(app);
@@ -17,6 +17,19 @@ const LandingPage = () => {
 
   const handleLogout = async () => {
     try {
+      const userId = user.uid;
+      const db = getFirestore(app);
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('uid', '==', userId));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        await updateDoc(doc(db, 'users', userDoc.id), {
+          online: false
+        });
+      }
+
       await signOut(auth);
       setUser(null);
     } catch (error) {
@@ -44,15 +57,15 @@ const LandingPage = () => {
                       Voyages
                     </Link>
                   </li>
-                  <li>	
-                    <Link to="/sondages" className="text-lg text-gray-700 hover:text-gray-900">	
-                      Sondages	
-                    </Link>	
-                  </li>	
-                  <li>	
-                    <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">	
-                      Chat	
-                    </Link>	
+                  <li>
+                    <Link to="/amis" className="text-lg text-gray-700 hover:text-gray-900">
+                      Amis
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/profil" className="text-lg text-gray-700 hover:text-gray-900">
+                      Profil
+                    </Link>
                   </li>
                 </ul>
                 <button

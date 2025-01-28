@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc, query, collection, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { app } from "../config/firebase-config";
 import { FcGoogle } from "react-icons/fc";
 
 const Login = () => {
   const auth = getAuth(app);
+  const db = getFirestore(app);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -17,8 +19,25 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      console.log("Utilisateur connecté via Google :", user);
-      navigate("/dashboard"); 
+
+      // Vérifiez si l'utilisateur existe déjà dans Firestore
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        // Si l'utilisateur n'existe pas, ajoutez-le à Firestore
+        await setDoc(userRef, {
+          uid: user.uid,
+          prenom: user.displayName?.split(" ")[0] || "",
+          nom: user.displayName?.split(" ").slice(1).join(" ") || "",
+          email: user.email,
+          photoProfil: "./user.jpg",
+          online: true,
+        });
+      }
+
+      console.log("Utilisateur connecté via Google et enregistré dans Firestore :", user);
+      navigate("/dashboard");
     } catch (error) {
       console.error("Erreur lors de la connexion avec Google :", error);
     }
@@ -30,6 +49,19 @@ const Login = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
+      // Mettre à jour le champ 'online' de l'utilisateur dans Firestore
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("uid", "==", user.uid));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        await setDoc(userDoc.ref, { online: true }, { merge: true });
+      } else {
+        console.error("User document does not exist.");
+      }
+
       console.log("Utilisateur connecté :", user);
       navigate("/dashboard"); 
     } catch (error) {

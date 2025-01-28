@@ -8,6 +8,8 @@ import Voyages from "./components/Voyages.jsx";
 import Chat from "./components/Chat.jsx";
 import GroupPage from "./components/GroupePage.jsx";
 import Sondage from "./components/Sondage.jsx";
+import Amis from "./components/Amis.jsx";
+
 function App() {
   return (
     <Router>
@@ -21,6 +23,7 @@ function App() {
         <Route path="/chat" element={<Chat />} />
         <Route path="/group/:groupName" element={<GroupPage />} />
         <Route path="/sondages" element={<Sondage />} />
+        <Route path="/amis" element={<Amis />} />
       </Routes>
     </Router>
   );

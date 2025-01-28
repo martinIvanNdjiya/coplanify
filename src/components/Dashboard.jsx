@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiMessageSquare, FiSettings, FiSearch } from "react-icons/fi";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, query, collection, where, getDocs, onSnapshot } from "firebase/firestore";
+import { getFirestore, query, collection, where, getDocs, onSnapshot, updateDoc, doc } from "firebase/firestore";
 import { app } from "../config/firebase-config";
-import CreateGroup from ".//CreateGroupe";
+import CreateGroup from "./CreateGroupe";
+
 const Dashboard = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -12,6 +13,7 @@ const Dashboard = () => {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [groups, setGroups] = useState([]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -49,13 +51,26 @@ const Dashboard = () => {
 
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate("/");
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion :", error);
-    }
-  };
+      try {
+        const userId = userProfile.uid;
+        const db = getFirestore(app);
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('uid', '==', userId));
+        const querySnapshot = await getDocs(q);
+  
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          await updateDoc(doc(db, 'users', userDoc.id), {
+            online: false
+          });
+        }
+  
+        await signOut(auth);
+        navigate('/');
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion :', error);
+      }
+    };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -71,14 +86,6 @@ const Dashboard = () => {
           <Link to="/voyages" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
             <FiAirplay className="mr-3 text-2xl" />
             Voyages
-          </Link>
-          <Link to="/sondages" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
-            <FiSettings className="mr-3 text-2xl" />
-            Sondages
-          </Link>
-          <Link to="/chat" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
-            <FiMessageSquare className="mr-3 text-2xl" />
-            Chat
           </Link>
           <Link to="/amis" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
             <FiUsers className="mr-3 text-2xl" />
@@ -146,7 +153,7 @@ const Dashboard = () => {
                   onClick={() => setShowCreateGroupModal(true)}
                   className="px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
                 >
-                  Créer un groupe
+                  Créer un voyage
                 </button>
 
                 {showCreateGroupModal && (

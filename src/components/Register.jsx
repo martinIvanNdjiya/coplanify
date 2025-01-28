@@ -39,6 +39,7 @@ const Register = () => {
         nom,
         email,
         photoProfil: photoURL,
+        online: true,
       });
 
       console.log("Utilisateur enregistré avec succès !");

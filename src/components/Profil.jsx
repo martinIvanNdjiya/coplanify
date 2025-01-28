@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, query, collection, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {app} from "../config/firebase-config";
+import { app } from "../config/firebase-config";
 
 const Profile = () => {
   const auth = getAuth(app);
@@ -100,13 +100,8 @@ const Profile = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/sondages" className="text-lg text-gray-700 hover:text-gray-900">
-                  Sondages
-                </Link>
-              </li>
-              <li>
-                <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">
-                  Chat
+                <Link to="/amis" className="text-lg text-gray-700 hover:text-gray-900">
+                  Amis
                 </Link>
               </li>
             </ul>
@@ -115,20 +110,27 @@ const Profile = () => {
       </nav>
 
       {/* Main Profile Section */}
-      <div className="flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-4xl bg-white shadow-lg rounded-3xl p-8">
+      <div
+        className="relative min-h-screen flex items-start justify-center py-12 px-4"
+        style={{ backgroundImage: "url('./profil.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        {/* <div className="absolute inset-0 bg-black opacity-50"></div> */}
+
+        <div className="relative z-10 w-full max-w-4xl bg-white/90 shadow-2xl rounded-3xl p-10 backdrop-blur-md mt-12">
           <h1 className="text-4xl font-extrabold text-center text-blue-500 mb-8">
             Mon Profil
           </h1>
+
           {notification && (
             <div
-              className={`mb-6 p-4 rounded-lg text-white ${
+              className={`mb-6 p-4 rounded-lg text-white text-center ${
                 notification.type === "success" ? "bg-green-500" : "bg-red-500"
               }`}
             >
               {notification.message}
             </div>
           )}
+
           {userProfile ? (
             <div className="flex flex-col lg:flex-row items-center lg:items-start lg:space-x-8">
               {/* Section Photo de profil */}
@@ -196,7 +198,7 @@ const Profile = () => {
                     onClick={handleProfileUpdate}
                     className="px-8 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
                   >
-                  Mettre à jour
+                    Mettre à jour
                   </button>
                 </div>
               </div>
