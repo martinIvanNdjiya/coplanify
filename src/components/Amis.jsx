@@ -168,6 +168,11 @@ const Amis = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">
+                  Groupes
+                </Link>
+              </li>
+              <li>
                 <Link to="/profil" className="text-lg text-gray-700 hover:text-gray-900">
                   Profil
                 </Link>

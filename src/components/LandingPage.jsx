@@ -58,6 +58,11 @@ const LandingPage = () => {
                     </Link>
                   </li>
                   <li>
+                    <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">
+                      Groupes
+                    </Link>
+                  </li>
+                  <li>
                     <Link to="/amis" className="text-lg text-gray-700 hover:text-gray-900">
                       Amis
                     </Link>

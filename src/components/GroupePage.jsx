@@ -57,38 +57,52 @@ const GroupPage = () => {
     }
 
     return (
-        <div className="flex h-screen">
-            <aside className="w-1/4 bg-white border-r border-gray-300">
-            <header className="bg-white p-6 border-b border-gray-300">
-          <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
-        </header>
-            {/* Sidebar */}
-                <nav className="flex-1 px-4 py-6 space-y-4">
-                    <button
-                        onClick={() => setActiveTab("chat")}
-                        className={`flex items-center text-lg font-medium ${
-                            activeTab === "chat" ? "text-blue-500" : "text-gray-700"
-                        } hover:text-blue-500 transition duration-300`}
-                    >
-                        <FiMessageSquare className="mr-3 text-2xl" />
-                        Chat
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("sondages")}
-                        className={`flex items-center text-lg font-medium ${
-                            activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
-                        } hover:text-blue-500 transition duration-300`}
-                    >
-                        <FiSettings className="mr-3 text-2xl" />
-                        Sondages
-                    </button>
-                </nav>
-            </aside>
+        <div className="flex flex-col h-screen">
+            {/* Navbar */}
+            <nav className="bg-white shadow-md w-full px-8 py-4 flex items-center justify-between border-b border-gray-300">
+                <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
+                <div className="flex space-x-8 mr-20">
+                    <Link to="/dashboard" className="text-lg text-gray-700 hover:text-gray-900">Accueil</Link>
+                    <Link to="/voyages" className="text-lg text-gray-700 hover:text-gray-900">Voyages</Link>
+                    <Link to="/amis" className="text-lg text-gray-700 hover:text-gray-900">Amis</Link>
+                    <Link to="/profil" className="text-lg text-gray-700 hover:text-gray-900">Profil</Link>
+                </div>
+            </nav>
 
-            {/* Main Content */}
-            <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
+            <div className="flex flex-1">
+                {/* Sidebar */}
+                <aside className="w-64 bg-white border-r border-gray-300 flex flex-col pt-4">
+                    <nav className="flex-1 px-4 py-6 space-y-4">
+                        <button
+                            onClick={() => setActiveTab("chat")}
+                            className={`flex items-center text-lg font-medium ${
+                                activeTab === "chat" ? "text-blue-500" : "text-gray-700"
+                            } hover:text-blue-500 transition duration-300`}
+                        >
+                            <FiMessageSquare className="mr-3 text-2xl" />
+                            Chat
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("sondages")}
+                            className={`flex items-center text-lg font-medium ${
+                                activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
+                            } hover:text-blue-500 transition duration-300`}
+                        >
+                            <FiSettings className="mr-3 text-2xl" />
+                            Sondages
+                        </button>
+                    </nav>
+                </aside>
+
+                {/* Main Content */}
+                <div
+                className="flex-1 p-6 bg-cover bg-center"
+                style={{ backgroundImage: activeTab === "chat" ? "url('/chat1.jpg')" : "url('/sondage1.jpg')" }}
+                >
                 {activeTab === "chat" && <Chat groupeId={groupeId} userId={userId} />}
                 {activeTab === "sondages" && <Sondage groupeId={groupeId} />}
+                </div>
+
             </div>
         </div>
     );
