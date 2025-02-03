@@ -49,18 +49,30 @@ const Groupes = () => {
         return () => unsubscribe(); // Nettoie le listener lors du démontage du composant
     }, [auth, db, navigate]);
 
-    useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "groups"), (snapshot) => {
-            const groupData = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            console.log("Real-time groups:", groupData);
-            setGroups(groupData);
-        });
 
-        return () => unsubscribe();
-    }, [db]);
+useEffect(() => {
+    const user = auth.currentUser;
+
+    if (!user) {
+        console.log("User is not logged in");
+        return;
+    }
+
+    const groupsRef = collection(db, "groups");
+    const groupsQuery = query(groupsRef, where("participants", "array-contains", user.uid));
+
+    const unsubscribe = onSnapshot(groupsQuery, (snapshot) => {
+        const groupData = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        console.log("Real-time groups:", groupData);
+        setGroups(groupData);
+    });
+
+    return () => unsubscribe();
+}, [db]);
+
 
     useEffect(() => {
         const fetchConnectedFriends = async () => {
@@ -126,7 +138,7 @@ const Groupes = () => {
                         <FiMessageSquare className="mr-3 text-2xl" />
                         Groupes
                     </Link>
-                    <Link to="/groupes" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+                    <Link to="/amis" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
                         <FiUsers className="mr-3 text-2xl" />
                         Amis
                     </Link>

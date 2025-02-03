@@ -11,7 +11,8 @@ import { FiMessageSquare, FiSettings } from "react-icons/fi";
 const GroupPage = () => {
     const { groupName } = useParams();
     const [groupeId, setGroupeId] = useState(null);
-    const [createur, setcreateur] = useState(null);
+    const [createur, setCreateur] = useState(null);
+    const [participants, setParticipants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("chat");
     const navigate = useNavigate();
@@ -27,21 +28,31 @@ const GroupPage = () => {
 
                 if (!querySnapshot.empty) {
                     const groupDoc = querySnapshot.docs[0];
+                    const groupData = groupDoc.data();
+
                     setGroupeId(groupDoc.id);
-                    setcreateur(groupDoc.data().createur);
+                    setCreateur(groupData.createur);
+                    setParticipants(groupData.participants);
+
+                    // Vérifier si l'utilisateur est un participant
+                    if (!groupData.participants.includes(userId)) {
+                        console.error("Vous n'êtes pas membre de ce groupe !");
+                        navigate("/dashboard"); // Rediriger vers le tableau de bord si l'utilisateur n'est pas dans le groupe
+                    }
                 } else {
-                    console.error("Group not found!");
-                    navigate("/dashboard");
+                    console.error("Groupe non trouvé !");
+                    navigate("/dashboard"); // Rediriger vers le tableau de bord si le groupe n'existe pas
                 }
             } catch (error) {
-                console.error("Error fetching group data:", error);
+                console.error("Erreur lors de la récupération des données du groupe :", error);
+                navigate("/dashboard");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchGroupData();
-    }, [groupName, navigate]);
+    }, [groupName, navigate, userId]);
 
     const handleLeaveGroup = async () => {
         const confirmLeave = window.confirm("Êtes-vous sûr de vouloir quitter ce groupe ?");
@@ -49,7 +60,7 @@ const GroupPage = () => {
             try {
                 const groupRef = doc(db, "groups", groupeId);
                 await updateDoc(groupRef, {
-                    members: arrayRemove(userId)
+                    participants: arrayRemove(userId),
                 });
                 navigate("/dashboard");
             } catch (error) {
@@ -57,11 +68,12 @@ const GroupPage = () => {
             }
         }
     };
+    
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <p className="text-gray-500 text-lg font-semibold">Loading group...</p>
+                <p className="text-gray-500 text-lg font-semibold">Chargement du groupe...</p>
             </div>
         );
     }
@@ -69,7 +81,7 @@ const GroupPage = () => {
     if (!groupeId) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <p className="text-red-500 text-lg font-semibold">Groupe pas trouver!</p>
+                <p className="text-red-500 text-lg font-semibold">Groupe non trouvé!</p>
             </div>
         );
     }
