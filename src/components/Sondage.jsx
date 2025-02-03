@@ -1,311 +1,269 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
-    collection,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    doc,
-    query,
-    orderBy,
-    onSnapshot,
-    arrayUnion,
-    arrayRemove,
-    serverTimestamp,
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../config/firebase-config";
 import { getAuth } from "firebase/auth";
 
 const Sondage = () => {
-    const [polls, setPolls] = useState([]);
-    const [newPoll, setNewPoll] = useState("");
-    const [options, setOptions] = useState([""]);
-    const [isCreating, setIsCreating] = useState(false);
-    const auth = getAuth();
+  const [polls, setPolls] = useState([]);
+  const [newPoll, setNewPoll] = useState("");
+  const [options, setOptions] = useState([""]);
+  const [expirationDate, setExpirationDate] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const auth = getAuth();
 
-    useEffect(() => {
-        const pollsRef = collection(db, "sondages");
-        const pollsQuery = query(pollsRef, orderBy("date", "desc"));
+  useEffect(() => {
+    const pollsRef = collection(db, "sondages");
+    const pollsQuery = query(pollsRef, orderBy("date", "desc"));
 
-        const unsubscribe = onSnapshot(pollsQuery, (snapshot) => {
-            const pollData = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setPolls(pollData);
-        });
+    const unsubscribe = onSnapshot(pollsQuery, (snapshot) => {
+      const pollData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPolls(pollData);
+    });
 
-        return () => unsubscribe();
-    }, []);
+    return () => unsubscribe();
+  }, []);
 
-    const handleAddPoll = async () => {
-        if (!newPoll.trim() || options.some((opt) => !opt.trim())) {
-            alert("Please provide a question and valid options.");
-            return;
-        }
+  const isPollExpired = (poll) => {
+    if (!poll.expiration) return false;
+    const now = new Date();
+    const expiration = poll.expiration.toDate();
+    return now > expiration;
+  };
 
-        try {
-            const pollsRef = collection(db, "sondages");
-            await addDoc(pollsRef, {
-                question: newPoll.trim(),
-                options: options.map((opt) => opt.trim()),
-                votes: Array(options.length).fill(0),
-                votedBy: [],
-                creator: auth.currentUser?.uid,
-                date: serverTimestamp(),
-            });
+  const handleAddPoll = async () => {
+    if (!newPoll.trim() || options.some((opt) => !opt.trim())) {
+      alert("Veuillez fournir une question et des options valides.");
+      return;
+    }
 
-            setNewPoll("");
-            setOptions([""]);
-            setIsCreating(false);
-        } catch (error) {
-            console.error("Error creating poll:", error);
-        }
-    };
+    try {
+      const pollsRef = collection(db, "sondages");
+      await addDoc(pollsRef, {
+        question: newPoll.trim(),
+        options: options.map((opt) => opt.trim()),
+        votes: Array(options.length).fill(0),
+        votedBy: [],
+        creator: auth.currentUser?.uid,
+        date: serverTimestamp(),
+        expiration: new Date(expirationDate),
+      });
 
-    const handleVote = async (pollId, selectedOptionIndex) => {
-        const userId = auth.currentUser?.uid;
-        if (!userId) {
-            alert("You need to be logged in to vote.");
-            return;
-        }
+      setNewPoll("");
+      setOptions([""]);
+      setExpirationDate("");
+      setIsCreating(false);
+    } catch (error) {
+      console.error("Erreur lors de la création du sondage:", error);
+    }
+  };
 
-        const poll = polls.find((p) => p.id === pollId);
-        if (!poll) return;
+  const handleDeletePoll = async (pollId) => {
+    try {
+      const pollDocRef = doc(db, "sondages", pollId);
+      await deleteDoc(pollDocRef);
+    } catch (error) {
+      console.error("Erreur lors de la suppression du sondage:", error);
+    }
+  };
 
-        if (poll.votedBy.includes(userId)) {
-            alert("You have already voted on this poll.");
-            return;
-        }
+  const handleAddOption = () => setOptions([...options, ""]);
+  
+  const handleRemoveOption = (index) => {
+    if (options.length > 1) {
+      setOptions(options.filter((_, i) => i !== index));
+    }
+  };
 
-        try {
-            const pollDocRef = doc(db, "sondages", pollId);
-            const updatedVotes = [...poll.votes];
-            updatedVotes[selectedOptionIndex] += 1;
+  const handleOptionChange = (index, value) => {
+    const updatedOptions = [...options];
+    updatedOptions[index] = value;
+    setOptions(updatedOptions);
+  };
 
-            await updateDoc(pollDocRef, {
-                votes: updatedVotes,
-                votedBy: arrayUnion(userId),
-            });
-        } catch (error) {
-            console.error("Error submitting vote:", error);
-        }
-    };
+  return (
+    <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/votre-image.jpg)' }}>
+      <div className="max-w-6xl mx-auto px-4 py-8 backdrop-blur-sm">
+        <h1 className="text-4xl font-bold text-center text-blue-600 mb-8 drop-shadow-lg">
+          Sondages du groupe
+        </h1>
 
-    const handleRemoveVote = async (pollId) => {
-        const userId = auth.currentUser?.uid;
-        if (!userId) {
-            alert("You need to be logged in to remove your vote.");
-            return;
-        }
-
-        const poll = polls.find((p) => p.id === pollId);
-        if (!poll || !poll.votedBy.includes(userId)) return;
-
-        try {
-            const pollDocRef = doc(db, "sondages", pollId);
-            const userVoteIndex = poll.votes.findIndex((vote) => vote > 0);
-            if (userVoteIndex !== -1) {
-                const updatedVotes = [...poll.votes];
-                updatedVotes[userVoteIndex] -= 1;
-
-                await updateDoc(pollDocRef, {
-                    votes: updatedVotes,
-                    votedBy: arrayRemove(userId),
-                });
-            }
-        } catch (error) {
-            console.error("Error removing vote:", error);
-        }
-    };
-
-    const handleDeletePoll = async (pollId) => {
-        try {
-            const pollDocRef = doc(db, "sondages", pollId);
-            await deleteDoc(pollDocRef);
-        } catch (error) {
-            console.error("Error deleting poll:", error);
-        }
-    };
-
-    const handleAddOption = () => {
-        setOptions([...options, ""]);
-    };
-
-    const handleRemoveOption = (index) => {
-        if (options.length > 1) {
-            const updatedOptions = options.filter((_, i) => i !== index);
-            setOptions(updatedOptions);
-        }
-    };
-
-    const handleOptionChange = (index, value) => {
-        const updatedOptions = [...options];
-        updatedOptions[index] = value;
-        setOptions(updatedOptions);
-    };
-
-    return (
-        <div className="max-w-4xl mx-auto mt-8">
-            <h1 className="text-4xl font-bold text-center text-blue-500 mb-6">
-                Sondages
-            </h1>
-
-            {isCreating ? (
-                <div className="bg-white p-6 shadow-md rounded-lg mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">Créer un nouveau sondage</h2>
-                    <input
-                        type="text"
-                        value={newPoll}
-                        onChange={(e) => setNewPoll(e.target.value)}
-                        placeholder="Entrez la question du sondage..."
-                        className="w-full p-3 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="space-y-2">
-                        {options.map((option, index) => (
-                            <div key={index} className="flex items-center space-x-2">
-                                <input
-                                    type="text"
-                                    value={option}
-                                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                                    placeholder={`Option ${index + 1}`}
-                                    className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <button
-                                    onClick={() => handleRemoveOption(index)}
-                                    disabled={options.length <= 1}
-                                    className="p-2 text-red-500 hover:text-red-600"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    <button
-                        onClick={handleAddOption}
-                        className="mt-4 px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition duration-300"
-                    >
-                        Ajouter une option
-                    </button>
-                    <button
-                        onClick={handleAddPoll}
-                        className="mt-4 ml-4 px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300"
-                    >
-                        Créer le sondage
-                    </button>
-                    <button
-                        onClick={() => setIsCreating(false)}
-                        className="mt-4 ml-4 px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300"
-                    >
-                        Annuler
-                    </button>
+        {isCreating ? (
+          <div className="bg-white/90 p-6 rounded-xl shadow-xl border border-blue-100 mb-8">
+            <h2 className="text-2xl font-semibold text-blue-800 mb-4">Nouveau sondage</h2>
+            <input
+              type="text"
+              value={newPoll}
+              onChange={(e) => setNewPoll(e.target.value)}
+              placeholder="Question du sondage..."
+              className="w-full p-3 border border-blue-200 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
+            />
+            
+            <div className="space-y-3 mb-4">
+              {options.map((option, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    className="flex-1 p-2 border border-blue-200 rounded-lg"
+                  />
+                  <button
+                    onClick={() => handleRemoveOption(index)}
+                    disabled={options.length <= 1}
+                    className="p-2 text-red-500 hover:text-red-600"
+                  >
+                    ✕
+                  </button>
                 </div>
-            ) : (
-                <button
-                    onClick={() => setIsCreating(true)}
-                    className="mb-8 px-6 py-3 bg-green-500 text-white rounded-md shadow-md hover:bg-green-600 transition duration-300"
-                >
-                    Créer un nouveau sondage
-                </button>
-            )}
+              ))}
+            </div>
 
-            {polls.length ? (
-                polls.map((poll) => {
-                    const totalVotes = poll.votes.reduce((sum, v) => sum + v, 0);
-                    const userId = auth.currentUser?.uid;
+            <div className="flex flex-wrap gap-4 mb-4">
+              <button
+                onClick={handleAddOption}
+                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
+              >
+                + Ajouter une option
+              </button>
+              
+              <input
+                type="datetime-local"
+                value={expirationDate}
+                onChange={(e) => setExpirationDate(e.target.value)}
+                required
+                className="p-2 border border-blue-200 rounded-lg"
+              />
+            </div>
 
-                    return (
-                        <div
-                            key={poll.id}
-                            className="mb-8 p-6 bg-white shadow-md rounded-lg border border-gray-300"
+            <div className="flex gap-4">
+              <button
+                onClick={handleAddPoll}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Publier
+              </button>
+              <button
+                onClick={() => setIsCreating(false)}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsCreating(true)}
+            className="mb-8 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+          >
+            Créer un sondage
+          </button>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {polls.map((poll) => {
+            const totalVotes = poll.votes.reduce((a, b) => a + b, 0);
+            const isExpired = isPollExpired(poll);
+
+            return (
+              <div 
+                key={poll.id}
+                className="relative bg-white/90 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-blue-100"
+              >
+                {isExpired && (
+                  <div className="absolute inset-0 bg-red-50/80 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <span className="text-red-600 font-bold text-lg">Sondage clos</span>
+                  </div>
+                )}
+
+                <div className={`${isExpired && "opacity-60"}`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-semibold text-blue-800 pr-4">
+                      {poll.question}
+                    </h3>
+                    {poll.creator === auth.currentUser?.uid && (
+                      <button
+                        onClick={() => handleDeletePoll(poll.id)}
+                        className="text-red-500 hover:text-red-600 p-1"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-2xl font-semibold mb-4">{poll.question}</h2>
-                                {poll.creator === userId && (
-                                    <button
-                                        onClick={() => handleDeletePoll(poll.id)}
-                                        className="text-red-500 hover:text-red-600"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            strokeWidth={2}
-                                            stroke="currentColor"
-                                            className="w-6 h-6"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M9 2.25h6M19.5 5.25h-15M10.5 9.75v6M13.5 9.75v6M4.5 5.25H19.5M6 5.25l1.5 15h9L18 5.25"
-                                            />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
 
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const selectedOption = new FormData(e.target).get("vote");
-                                    const selectedOptionIndex = Number(selectedOption);
-                                    if (selectedOptionIndex !== -1) {
-                                        handleVote(poll.id, selectedOptionIndex);
-                                    }
-                                }}
-                                className="flex flex-col gap-4"
-                            >
-                                {poll.options.map((option, index) => {
-                                    const percentage =
-                                        totalVotes > 0 ? Math.floor((poll.votes[index] / totalVotes) * 100) : 0;
-
-                                    return (
-                                        <div key={index} className="votes">
-                                            <input
-                                                type="radio"
-                                                name="vote"
-                                                value={index}
-                                                id={`${poll.id}-${index}`}
-                                                className="peer hidden"
-                                                disabled={poll.votedBy.includes(userId)}
-                                            />
-                                            <label
-                                                htmlFor={`${poll.id}-${index}`}
-                                                className={`block p-4 border rounded-md cursor-pointer peer-checked:bg-blue-500 peer-checked:text-white ${poll.votedBy.includes(userId) && "opacity-50"
-                                                    }`}
-                                            >
-                                                <p className="flex justify-between">
-                                                    {option} <span>{percentage}%</span>
-                                                </p>
-                                            </label>
-                                        </div>
-                                    );
-                                })}
-                                {poll.votedBy.includes(userId) ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveVote(poll.id)}
-                                        className="mt-4 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-                                    >
-                                        Retirer votre vote
-                                    </button>
-                                ) : (
-                                    <button
-                                        type="submit"
-                                        className="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-                                    >
-                                        Votez
-                                    </button>
-                                )}
-                            </form>
-
+                  <div className="space-y-2 mb-4">
+                    {poll.options.slice(0, 2).map((option, index) => (
+                      <div key={index} className="bg-blue-50 p-3 rounded-lg">
+                        <div className="h-2 bg-blue-100 rounded-full mb-1">
+                          <div
+                            className="h-full bg-blue-500 rounded-full transition-all"
+                            style={{
+                              width: `${(poll.votes[index] / (totalVotes || 1)) * 100}%`
+                            }}
+                          />
                         </div>
-                    );
-                })
-            ) : (
-                <p className="text-center text-gray-500">Aucun sondage disponible.</p>
-            )}
+                        <span className="text-sm text-blue-600">{option}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm text-blue-500">
+                    <span>
+                      {totalVotes} vote{totalVotes > 1 ? "s" : ""}
+                    </span>
+                    {poll.expiration && (
+                      <span>
+                        Expire le {poll.expiration.toDate().toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    to={`/sondages/${poll.id}`}
+                    className="mt-4 inline-block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    {isExpired ? "Voir résultats" : "Participer"}
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
         </div>
-    );
+
+        {polls.length === 0 && (
+          <p className="text-center text-gray-500 mt-8">
+            Aucun sondage disponible pour le moment.
+          </p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Sondage;

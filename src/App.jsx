@@ -6,9 +6,11 @@ import Dashboard from "./components/Dashboard";
 import Profile from "./components/Profil";
 import Voyages from "./components/Voyages.jsx";
 import Chat from "./components/Chat.jsx";
-import GroupPage from "./components/GroupePage.jsx";
+import GroupPage from "./components/GroupPage.jsx";
 import Sondage from "./components/Sondage.jsx";
+import SondageDetails from "./components/SondageDetails.jsx";
 import Amis from "./components/Amis.jsx";
+import Groupes from './components/Groupes.jsx'
 
 function App() {
   return (
@@ -23,7 +25,9 @@ function App() {
         <Route path="/chat" element={<Chat />} />
         <Route path="/group/:groupName" element={<GroupPage />} />
         <Route path="/sondages" element={<Sondage />} />
+        <Route path="/sondages/:pollId" element={<SondageDetails />} />
         <Route path="/amis" element={<Amis />} />
+        <Route path="/groupes" element={<Groupes />} />
       </Routes>
     </Router>
   );

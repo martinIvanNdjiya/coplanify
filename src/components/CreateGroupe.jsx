@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { collection, addDoc, getDocs, query, where, getFirestore } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, getFirestore, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import {app} from "../config/firebase-config";
+import { app } from "../config/firebase-config";
 
 const CreateGroup = ({ onClose }) => {
   const auth = getAuth(app);
@@ -19,7 +19,7 @@ const CreateGroup = ({ onClose }) => {
       const user = auth.currentUser;
       if (user) {
         try {
-          // Obtenir le doc de l'utilisateur actuel
+          // Obtenir le document de l'utilisateur actuel
           const q = query(collection(db, "users"), where("uid", "==", user.uid));
           const querySnapshot = await getDocs(q);
 
@@ -27,7 +27,7 @@ const CreateGroup = ({ onClose }) => {
             const currentUserDoc = querySnapshot.docs[0];
             const currentUserId = currentUserDoc.id;
 
-            // Obtenir les amis de l'utilisateur actuel
+            // Obtenir la liste des amis de l'utilisateur actuel
             const friendsRef = collection(db, "users", currentUserId, "amis");
             const friendsSnapshot = await getDocs(friendsRef);
 
@@ -35,7 +35,7 @@ const CreateGroup = ({ onClose }) => {
             for (const friendDoc of friendsSnapshot.docs) {
               const friendData = friendDoc.data();
 
-              // Obtenir les infos complètes de chaque ami
+              // Récupérer les informations complètes de chaque ami
               const friendQuery = query(collection(db, "users"), where("uid", "==", friendData.uid));
               const friendSnapshot = await getDocs(friendQuery);
 
@@ -56,8 +56,8 @@ const CreateGroup = ({ onClose }) => {
   }, [auth, db]);
 
   const handleCreateGroup = async () => {
-    if (!groupName || !groupDescription || selectedParticipants.length === 0) {
-      setNotification({ type: "error", message: "Tous les champs sont requis, et au moins un participant doit être sélectionné." });
+    if (!groupName || !groupDescription) {
+      setNotification({ type: "error", message: "Tous les champs sont requis." });
       setTimeout(() => setNotification(null), 3000);
       return;
     }
@@ -66,12 +66,17 @@ const CreateGroup = ({ onClose }) => {
       const user = auth.currentUser;
       if (!user) return;
 
-      // Créer le groupe avec ses sous-collections
+      // Ajouter le créateur dans la liste des participants
+      const allParticipants = [...selectedParticipants.map((p) => p.uid), user.uid];
+
+      // Créer le groupe avec les informations nécessaires
       const newGroupRef = await addDoc(collection(db, "groups"), {
         name: groupName,
         description: groupDescription,
-        participants: selectedParticipants.map((p) => p.uid),
-        createur: user.uid
+        participants: allParticipants,
+        createur: user.uid,
+        createdAt: serverTimestamp(), // Date de création pour le tri
+        icon: "default-group-icon.png" // Icône par défaut du groupe
       });
 
       console.log("Groupe créé avec ID:", newGroupRef.id);
@@ -117,7 +122,7 @@ const CreateGroup = ({ onClose }) => {
         />
 
         {/* Sélection des participants */}
-        <label className="block text-lg font-semibold text-gray-700 mb-2">Participants</label>
+        <label className="block text-lg font-semibold text-gray-700 mb-2">Ajouter un ami</label>
         <select
           multiple
           value={selectedParticipants.map((p) => p.uid)}
@@ -152,6 +157,7 @@ const CreateGroup = ({ onClose }) => {
     </div>
   );
 };
+
 CreateGroup.propTypes = {
   onClose: PropTypes.func.isRequired,
 };

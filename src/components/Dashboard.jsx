@@ -121,7 +121,7 @@ const Dashboard = () => {
             <FiAirplay className="mr-3 text-2xl" />
             Voyages
           </Link>
-          <Link to="/chat" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+          <Link to="/groupes" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
             <FiMessageSquare className="mr-3 text-2xl" />
             Groupes
           </Link>
