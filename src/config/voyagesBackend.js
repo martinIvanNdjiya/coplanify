@@ -21,10 +21,10 @@ app.use(express.static("public"));
 app.get("/api/autocomplete", async (req, res) => {
   try {
     const { keyword } = req.query;
-    
+
     if (!keyword || keyword.length < 2) {
-      return res.status(400).json({ 
-        error: "Le paramètre 'keyword' est requis (min 2 caractères)" 
+      return res.status(400).json({
+        error: "Le paramètre 'keyword' est requis (min 2 caractères)"
       });
     }
 
@@ -54,14 +54,14 @@ app.get("/api/search", async (req, res) => {
       adults: parseInt(req.query.adults, 10),
       travelClass: req.query.travelClass,
       currencyCode: req.query.currency || 'USD',
-      nonStop: req.query.nonStop === 'true' 
+      nonStop: req.query.nonStop === 'true'
     };
 
     const { data } = await amadeus.shopping.flightOffersSearch.get(params);
-    
-    res.json({ 
+
+    res.json({
       data: data,
-      meta: { count: data.length } 
+      meta: { count: data.length }
     });
   } catch (error) {
     const status = error.response?.statusCode || 500;
