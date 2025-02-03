@@ -45,8 +45,8 @@ const FlightResultCard = ({offer, currency}) => {
         const user = auth.currentUser;
         const message = {
             message: newMessage + ": " + offer,
-            sentAt: new Date(),
-            senderId: user.uid,
+            date: new Date(),
+            idUtilisateur: user.uid,
         };
 
         await addDoc(collection(db, "groups", groupId, "messages"), message);
