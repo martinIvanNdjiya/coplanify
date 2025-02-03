@@ -218,7 +218,7 @@ const Sondage = () => {
                   </div>
 
                   <div className="space-y-2 mb-4">
-                    {poll.options.slice(0, 2).map((option, index) => (
+                    {poll.options.map((option, index) => (
                       <div key={index} className="bg-blue-50 p-3 rounded-lg">
                         <div className="h-2 bg-blue-100 rounded-full mb-1">
                           <div
