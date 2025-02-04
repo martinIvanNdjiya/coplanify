@@ -55,7 +55,6 @@ const Sondage = () => {
         question: newPoll.trim(),
         options: options.map((opt) => opt.trim()),
         votes: Array(options.length).fill(0),
-        votedBy: [],
         creator: auth.currentUser?.uid,
         date: serverTimestamp(),
         expiration: new Date(expirationDate),

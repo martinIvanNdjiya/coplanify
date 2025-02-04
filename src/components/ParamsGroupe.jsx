@@ -26,8 +26,9 @@ const ParamsGroupe = ({ groupeId }) => {
     const [newName, setNewName] = useState("");
     const [newDescription, setNewDescription] = useState("");
     const [newParticipant, setNewParticipant] = useState("");
-    const [participantsData, setParticipantsData] = useState([]); 
+    const [participantsData, setParticipantsData] = useState([]);
     const [notification, setNotification] = useState(null);
+    const [friendsList, setFriendsList] = useState([]);
     const navigate = useNavigate();
     useEffect(() => {
         if (!groupeId) return;
@@ -52,6 +53,51 @@ const ParamsGroupe = ({ groupeId }) => {
         return () => unsubscribe();
     }, [groupeId, db]);
 
+
+
+    useEffect(() => {
+        if (!currentUserUid) return;
+
+        const fetchUserFriends = async () => {
+            try {
+
+                const amisRef = collection(db, "users", currentUserUid, "amis");
+                const amisSnapshot = await getDocs(amisRef);
+
+                const friendProfiles = await Promise.all(
+                    amisSnapshot.docs.map(async (docSnap) => {
+                        const amiData = docSnap.data();
+
+                        const q = query(
+                            collection(db, "users"),
+                            where("uid", "==", amiData.uid)
+                        );
+                        const querySnapshot = await getDocs(q);
+
+                        if (!querySnapshot.empty) {
+                            const friendDoc = querySnapshot.docs[0];
+                            return {
+                                docId: friendDoc.id,
+                                ...friendDoc.data(),
+                            };
+                        } else {
+                            return null;
+                        }
+                    })
+                );
+
+                const filtered = friendProfiles.filter((f) => f !== null);
+
+                setFriendsList(filtered);
+            } catch (error) {
+                console.error("Erreur lors de la récupération des amis :", error);
+            }
+        };
+
+        fetchUserFriends();
+    }, [currentUserUid, db]);
+
+
     const fetchParticipantsNames = async (uids) => {
         try {
             if (!uids || uids.length === 0) return;
@@ -65,7 +111,7 @@ const ParamsGroupe = ({ groupeId }) => {
                 ...doc.data(),
             }));
 
-            setParticipantsData(participants); 
+            setParticipantsData(participants);
         } catch (error) {
             console.error("Erreur lors de la récupération des participants :", error);
         }
@@ -157,25 +203,24 @@ const ParamsGroupe = ({ groupeId }) => {
             setNotification({ type: "error", message: "ID du groupe introuvable !" });
             return;
         }
-    
+
         navigator.clipboard.writeText(groupeId);
         setNotification({ type: "success", message: `ID du groupe copié !` });
-    
+
         // Reset apres 2 seconds
         setTimeout(() => setNotification(null), 2000);
     };
-    
+
     return (
-        
+
         <div className="max-w-4xl mx-auto mt-8">
             <h1 className="text-4xl font-bold text-center text-blue-500 mb-6">
                 Paramètres du Groupe
             </h1>
 
             {notification && (
-                <div className={`mb-4 p-3 rounded text-white text-center ${
-                    notification.type === "success" ? "bg-green-500" : "bg-red-500"
-                }`}>
+                <div className={`mb-4 p-3 rounded text-white text-center ${notification.type === "success" ? "bg-green-500" : "bg-red-500"
+                    }`}>
                     {notification.message}
                 </div>
             )}
@@ -227,34 +272,40 @@ const ParamsGroupe = ({ groupeId }) => {
 
                 {participantsData.length > 0 ? (
                     <ul className="mb-4 border p-3 rounded-lg bg-gray-100 max-h-32 overflow-auto">
-                    {participantsData.map((participant) => (
-                        <li key={participant.uid} className="flex justify-between items-center py-1">
-                            <span className="text-gray-700">
-                                {participant.prenom} {participant.nom}
-                            </span>
-                            {participant.uid !== currentUserUid && (
-                                <button
-                                    onClick={() => handleRemoveParticipant(participant.uid)}
-                                    className="text-red-500 hover:text-red-700 text-sm"
-                                >
-                                    Kick
-                                </button>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                        {participantsData.map((participant) => (
+                            <li key={participant.uid} className="flex justify-between items-center py-1">
+                                <span className="text-gray-700">
+                                    {participant.prenom} {participant.nom}
+                                </span>
+                                {participant.uid !== currentUserUid && (
+                                    <button
+                                        onClick={() => handleRemoveParticipant(participant.uid)}
+                                        className="text-red-500 hover:text-red-700 text-sm"
+                                    >
+                                        Kick
+                                    </button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
                 ) : (
                     <p className="text-gray-500 text-center">Aucun participant</p>
                 )}
 
-                <div className="flex gap-2">
-                    <input
-                        type="text"
+                <div className="flex gap-2 items-center">
+                    <select
                         value={newParticipant}
                         onChange={(e) => setNewParticipant(e.target.value)}
                         className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="UID du participant"
-                    />
+                    >
+                        <option value="">Sélectionnez un ami...</option>
+                        {friendsList.map((friend) => (
+                            <option key={friend.uid} value={friend.uid}>
+                                {/* diplay nom et prenom*/}
+                                {friend.prenom} {friend.nom}
+                            </option>
+                        ))}
+                    </select>
 
                     <button
                         onClick={handleAddParticipant}
@@ -263,6 +314,7 @@ const ParamsGroupe = ({ groupeId }) => {
                         Ajouter
                     </button>
                 </div>
+
             </div>
         </div>
     );
@@ -270,7 +322,7 @@ const ParamsGroupe = ({ groupeId }) => {
 
 
 ParamsGroupe.propTypes = {
-    groupeId: PropTypes.string.isRequired, 
+    groupeId: PropTypes.string.isRequired,
 }
 
 export default ParamsGroupe;

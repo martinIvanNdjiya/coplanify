@@ -20,6 +20,7 @@ const GroupPage = () => {
     const userId = auth.currentUser?.uid;
 
     useEffect(() => {
+        if (!userId) return;
         const fetchGroupData = async () => {
             try {
                 const groupsRef = collection(db, "groups");
