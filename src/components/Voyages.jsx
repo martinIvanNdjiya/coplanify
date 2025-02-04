@@ -20,8 +20,15 @@ const FlightResultCard = ({offer, currency}) => {
     const {price, itineraries, oneWay} = offer;
     const [isModalOpenGroup, setIsModalOpenGroup] = useState(false); // Comment modal
     const [groups, setGroups] = useState([]);
+    const [segmentIndex, setSegmentIndex] = useState(null);
     const user = auth.currentUser;
     const [newMessage, setMessage] = useState("");
+
+    console.log('Selected segment index:', segmentIndex);
+    if (segmentIndex < 0 || segmentIndex >= itineraries[0].segments.length) {
+        console.error('Invalid segment index');
+        return;  // Exit if the index is invalid
+    }
 
     useEffect(() => {
         const unsubscribe = onSnapshot(
@@ -41,13 +48,23 @@ const FlightResultCard = ({offer, currency}) => {
 
 
 
-    const shareTripInGroupChat = async (groupId) => {
+    const shareTripInGroupChat = async (groupId, segmentIndex) => {
         const user = auth.currentUser;
+        const itinerary = itineraries[0];
+
+        const segment = itinerary.segments[segmentIndex];
+
+        const departureDate = format(new Date(segment.departure.at), 'dd/MM/yyyy HH:mm');
+        const arrivalDate = format(new Date(segment.arrival.at), 'dd/MM/yyyy HH:mm');
+
         const message = {
-            message: newMessage + ": " + offer,
-            sentAt: new Date(),
-            senderId: user.uid,
+            message: `Price: ${price.currency} ${price.total}, Duration: ${itinerary.duration}, 
+                  Depart: ${segment.departure.iataCode} at ${departureDate}, 
+                  Arrive: ${segment.arrival.iataCode} at ${arrivalDate}`,
+            date: new Date(),
+            idUtilisateur: user.uid,
         };
+
 
         await addDoc(collection(db, "groups", groupId, "messages"), message);
         setMessage("");
@@ -91,6 +108,9 @@ const FlightResultCard = ({offer, currency}) => {
                                         <FiUsers className="mr-2"/>
                                         {segment.passengerCount} passager{segment.passengerCount > 0 ? 's' : ''}
                                     </div>
+                                    <button onClick={() => setIsModalOpenGroup(true) && setSegmentIndex(segmentIdx)}>
+                                        <FaShare style={{fontSize: '25px', color: '#4C9BCE'}}/>
+                                    </button>
                                 </li>
                             ))}
                         </ul>
@@ -98,9 +118,6 @@ const FlightResultCard = ({offer, currency}) => {
                 ))}
             </div>
 
-            <button onClick={() => setIsModalOpenGroup(true)}>
-                <FaShare style={{fontSize: '25px', color: '#4C9BCE'}}/>
-            </button>
 
             {isModalOpenGroup && (
                 <div className="modal-overlay">
@@ -132,8 +149,8 @@ const FlightResultCard = ({offer, currency}) => {
                                     </div>
 
                                     <div className="column is-full">
-                                        <button className="button is-info" onClick={() => shareTripInGroupChat(groups[0].id)}>
-                                            <FaPaperPlane /> Send a message
+                                        <button className="button is-info" onClick={() => shareTripInGroupChat(groups[0].id, segmentIndex)}>
+                                            <FaPaperPlane />
                                         </button>
                                     </div>
                                 </div>
