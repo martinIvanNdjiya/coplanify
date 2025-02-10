@@ -11,7 +11,7 @@ import { getAuth } from "firebase/auth";
 import { ArrowLeft } from "react-feather"; // Back icon
 
 const SondageDetails = () => {
-  const { pollId } = useParams();
+  const { groupId, pollId } = useParams();
   const navigate = useNavigate();
   const [poll, setPoll] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
@@ -20,25 +20,52 @@ const SondageDetails = () => {
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
+  // useEffect(() => {
+  //   if (!pollId || !userId) return;
+
+  //   const pollRef = doc(db, "groupes", groupId, "sondages", pollId);
+
+  //   // Listen to real-time updates on the poll document
+  //   const unsubscribe = onSnapshot(
+  //     pollRef,
+  //     (docSnap) => {
+  //       if (docSnap.exists()) {
+  //         const pollData = { id: docSnap.id, ...docSnap.data() };
+
+  //         // Update the poll state
+  //         setPoll(pollData);
+
+  //         // Check if the user has already voted by seeing if userId exists in userVotes
+  //         const userVoteIndex = pollData.userVotes?.[userId];
+  //         setHasVoted(userVoteIndex !== undefined);
+
+  //         setError(null);
+  //       } else {
+  //         setError("Ce sondage n'existe pas.");
+  //       }
+  //       setLoading(false);
+  //     },
+  //     () => {
+  //       setError("Erreur de chargement du sondage.");
+  //       setLoading(false);
+  //     }
+  //   );
+
+  //   return () => unsubscribe();
+  // }, [pollId, userId]);
+
   useEffect(() => {
-    if (!pollId || !userId) return;
-
-    const pollRef = doc(db, "sondages", pollId);
-
-    // Listen to real-time updates on the poll document
+    if (!groupId || !pollId) return;
+  
+    const pollRef = doc(db, "groups", groupId, "sondages", pollId);
+  
     const unsubscribe = onSnapshot(
       pollRef,
       (docSnap) => {
         if (docSnap.exists()) {
           const pollData = { id: docSnap.id, ...docSnap.data() };
-
-          // Update the poll state
           setPoll(pollData);
-
-          // Check if the user has already voted by seeing if userId exists in userVotes
-          const userVoteIndex = pollData.userVotes?.[userId];
-          setHasVoted(userVoteIndex !== undefined);
-
+          setHasVoted(pollData.userVotes?.[userId] !== undefined);
           setError(null);
         } else {
           setError("Ce sondage n'existe pas.");
@@ -50,9 +77,10 @@ const SondageDetails = () => {
         setLoading(false);
       }
     );
-
+  
     return () => unsubscribe();
-  }, [pollId, userId]);
+  }, [groupId, pollId, userId]);
+  
 
   // Just for debugging, to see when hasVoted changes:
   useEffect(() => {
@@ -94,7 +122,7 @@ const SondageDetails = () => {
       const updatedVotes = [...poll.votes];
       updatedVotes[selectedOptionIndex] += 1;
 
-      const pollRef = doc(db, "sondages", pollId);
+      const pollRef = doc(db, "groups", groupId, "sondages", pollId);
       await updateDoc(pollRef, {
         votes: updatedVotes,
         [`userVotes.${userId}`]: selectedOptionIndex,
@@ -121,7 +149,7 @@ const SondageDetails = () => {
         updatedVotes[userVoteIndex] -= 1;
       }
 
-      const pollRef = doc(db, "sondages", pollId);
+      const pollRef = doc(db, "groups", groupId, "sondages", pollId);
       await updateDoc(pollRef, {
         votes: updatedVotes,
         [`userVotes.${userId}`]: deleteField(),

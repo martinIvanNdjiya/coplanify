@@ -120,133 +120,98 @@ useEffect(() => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100">
-            {/* Header et Barre latérale intégrés */}
-            <aside className="fixed top-0 left-0 h-full w-64 bg-white flex flex-col">
-                {/* Header combiné */}
-                <header className="bg-white p-6 border-b border-gray-300">
+        <div className="min-h-screen bg-gray-100">
+            {/* Navbar */}
+            <nav className="bg-white shadow-md">
+                <div className="container mx-auto px-4 py-6 flex items-center justify-between">
                     <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
-                </header>
-
-                {/* Navigation */}
-                <nav className="flex-1 px-4 py-6 space-y-4">
-                    <Link to="/voyages" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
-                        <FiAirplay className="mr-3 text-2xl" />
-                        Voyages
-                    </Link>
-                    <Link to="/groupes" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
-                        <FiMessageSquare className="mr-3 text-2xl" />
-                        Groupes
-                    </Link>
-                    <Link to="/amis" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
-                        <FiUsers className="mr-3 text-2xl" />
-                        Amis
-                    </Link>
-                    <Link to="/profil" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
-                        <FiUser className="mr-3 text-2xl" />
-                        Profil
-                    </Link>
-                </nav>
-
-                {/* Bouton de déconnexion */}
-                <div className="px-4 py-6">
-                    <button onClick={handleLogout} className="w-full flex items-center justify-center text-lg text-red-600 hover:text-red-700">
-                        <FiLogOut className="mr-3 text-2xl" />
-                        Déconnexion
-                    </button>
+                    <div className="flex items-center space-x-8">
+                        <ul className="flex space-x-6">
+                            <li>
+                                <Link to="/dashboard" className="text-lg text-gray-700 hover:text-gray-900">
+                                    Accueil
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/voyages" className="text-lg text-gray-700 hover:text-gray-900">
+                                    Voyages
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/groupes" className="text-lg text-blue-500 font-semibold">
+                                    Groupes
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/profil" className="text-lg text-gray-700 hover:text-gray-900">
+                                    Profil
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
-            </aside>
+            </nav>
 
-            {/* Zone principale */}
-            <div className="flex-1 flex flex-col pl-64">
-                <header className="bg-white p-4 flex items-center justify-between">
-                    {/* Barre de recherche */}
-                    <div className="relative flex-grow max-w-3xl ml-8">
-                        <input
-                            type="text"
-                            placeholder="Rechercher..."
-                            className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-300 focus:ring-blue-500 focus:border-blue-500 transition duration-300 text-gray-700"
-                        />
-                        <div className="absolute top-1/2 left-4 transform -translate-y-1/2 text-blue-500">
-                            <FiSearch className="h-6 w-6" />
-                        </div>
+            {/* Main Group Section */}
+            <div className="relative min-h-screen flex flex-col items-center justify-center py-12 px-4"
+                style={{ backgroundImage: "url('./groupes-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+                
+                <div className="relative z-10 w-full max-w-4xl bg-white/90 shadow-2xl rounded-3xl p-10 backdrop-blur-md mt-12">
+                    <h1 className="text-4xl font-extrabold text-center text-blue-500 mb-8">
+                        Mes Groupes
+                    </h1>
+
+                    {/* Buttons */}
+                    <div className="flex justify-center space-x-6 mb-8">
+                        <button
+                            onClick={() => setShowCreateGroupModal(true)}
+                            className="px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
+                        >
+                            Créer un groupe
+                        </button>
+
+                        <button
+                            onClick={() => setShowJoinGroupModal(true)}
+                            className="px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
+                        >
+                            Rejoindre un groupe
+                        </button>
                     </div>
 
-                    {/* Profil */}
-                    {userProfile && (
-                        <img
-                            src={userProfile.photoProfil || "./defaultProfile.jpg"}
-                            alt="Profile"
-                            className="w-14 h-14 rounded-full border-2 border-blue-500 hover:shadow-lg transition duration-300"
-                        />
-                    )}
-                </header>
+                    {showCreateGroupModal && <CreateGroup onClose={() => setShowCreateGroupModal(false)} />}
+                    {showJoinGroupModal && <JoinGroup onClose={() => setShowJoinGroupModal(false)} />}
 
-                {/* Zone centrale */}
-                <div className="relative flex-1 p-6 overflow-y-auto">
-                    {/* Image en arrière-plan */}
-                    <img
-                        src="./db4.jpg"
-                        alt="Groupes Background"
-                        className="absolute top-0 left-0 w-full h-full object-cover"
-                    />
-                    {/* Superposition pour lisibilité */}
-                    <div className="absolute inset-0 z-10"></div>
-                    {/* Contenu central */}
-                    <div className="relative z-20">
-                        {/* Section Voyages */}
-                        <section>
-                            <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-5xl font-extrabold text-white drop-shadow-md">Groupes</h2>
-
-
-                                <div className="flex flex-col space-y-4">
-                                    <button
-                                        onClick={() => setShowCreateGroupModal(true)}
-                                        className="px-5 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
-                                    >
-                                        Créer un groupe
-                                    </button>
-
-                                    <button
-                                        onClick={() => setShowJoinGroupModal(true)}
-                                        className="px-5 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
-                                    >
-                                        Rejoindre un groupe
-                                    </button>
+                    {/* Groups Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {groups.length > 0 ? (
+                            groups.map((group) => (
+                                <div
+                                    key={group.id}
+                                    onClick={() => navigate(`/group/${group.name}`)}
+                                    className="bg-white bg-opacity-90 rounded-xl p-6 shadow-md hover:shadow-lg cursor-pointer transition duration-300"
+                                >
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-2">{group.name || "Nom indisponible"}</h3>
+                                    <p className="text-gray-600 text-lg">👥 {group.participants?.length || 0} participants</p>
                                 </div>
-
-
-                                {showCreateGroupModal && (
-                                    <CreateGroup onClose={() => setShowCreateGroupModal(false)} />
-                                )}
-                                {showJoinGroupModal && (
-                                    <JoinGroup onClose={() => setShowJoinGroupModal(false)} />
-                                )}
-
-                            </div>
-                            {/* Grille de cartes voyages */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {groups.map((group) => (
-                                    <div
-                                        key={group.id}
-                                        onClick={() => navigate(`/group/${group.name}`)} // Navigate to the group page
-                                        className="bg-white bg-opacity-90 rounded-xl p-6 transition duration-300 cursor-pointer hover:shadow-lg"
-                                    >
-                                        <h3 className="text-2xl font-bold text-black mb-4">
-                                            {group.name || "Nom indisponible"}
-                                        </h3>
-                                        <p className="text-lg text-gray-800">
-                                            👥 Participants : {group.participants?.length || 0}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
+                            ))
+                        ) : (
+                            <p className="text-gray-600 text-center text-lg">Aucun groupe trouvé.</p>
+                        )}
                     </div>
                 </div>
+
+                {/* Logout Button */}
+                <button
+                    onClick={handleLogout}
+                    className="absolute top-6 right-6 flex items-center text-lg text-red-600 hover:text-red-700 transition"
+                >
+                    <FiLogOut className="mr-3 text-2xl" />
+                    Déconnexion
+                </button>
             </div>
         </div>
     );
-}
+};
+
+
 export default Groupes;

@@ -22,10 +22,10 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profil" element={<Profile />} />
         <Route path="/voyages" element={<Voyages />} />
-        <Route path="/chat" element={<Chat />} />
+        <Route path="/group/:groupeId/chat" element={<Chat />} />
         <Route path="/group/:groupName" element={<GroupPage />} />
-        <Route path="/sondages" element={<Sondage />} />
-        <Route path="/sondages/:pollId" element={<SondageDetails />} />
+        <Route path="/group/:groupId/sondages" element={<Sondage />} />
+        <Route path="/group/:groupId/sondages/:pollId" element={<SondageDetails />} />
         <Route path="/amis" element={<Amis />} />
         <Route path="/groupes" element={<Groupes />} />
       </Routes>

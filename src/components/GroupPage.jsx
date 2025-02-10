@@ -55,6 +55,11 @@ const GroupPage = () => {
         fetchGroupData();
     }, [groupName, navigate, userId]);
 
+    useEffect(() => {
+        console.log("User ID:", userId);
+    }, [userId]);
+    
+
     const handleLeaveGroup = async () => {
         const confirmLeave = window.confirm("Êtes-vous sûr de vouloir quitter ce groupe ?");
         if (confirmLeave) {
@@ -78,32 +83,85 @@ const GroupPage = () => {
             </div>
         );
     }
-
-    if (!groupeId) {
+    
+    if (!groupeId || !userId) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <p className="text-red-500 text-lg font-semibold">Groupe non trouvé!</p>
+                <p className="text-red-500 text-lg font-semibold">Erreur : groupe non trouvé ou utilisateur non connecté.</p>
             </div>
         );
     }
-
+    
     return (
-        <div className="flex flex-col h-screen">
+        <div className="min-h-screen bg-gray-100">
             {/* Navbar */}
-            <nav className="bg-white shadow-md w-full px-8 py-4 flex items-center justify-between border-b border-gray-300">
-                <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
-                <div className="flex space-x-8 mr-20">
-                    <Link to="/dashboard" className="text-lg text-gray-700 hover:text-gray-900">Accueil</Link>
-                    <Link to="/voyages" className="text-lg text-gray-700 hover:text-gray-900">Voyages</Link>
-                    <Link to="/amis" className="text-lg text-gray-700 hover:text-gray-900">Amis</Link>
-                    <Link to="/profil" className="text-lg text-gray-700 hover:text-gray-900">Profil</Link>
+            <nav className="bg-white shadow-md">
+                <div className="container mx-auto px-4 py-6 flex items-center justify-between">
+                    <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
+                    <div className="flex items-center space-x-8">
+                        <ul className="flex space-x-6">
+                            <li>
+                                <Link to="/dashboard" className="text-lg text-gray-700 hover:text-gray-900 transition">
+                                    Accueil
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/voyages" className="text-lg text-gray-700 hover:text-gray-900 transition">
+                                    Voyages
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/groupes" className="text-lg text-blue-500 font-semibold">
+                                    Groupes
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/profil" className="text-lg text-gray-700 hover:text-gray-900 transition">
+                                    Profil
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </nav>
-
+    
+            {/* Main Layout */}
             <div className="flex flex-1">
                 {/* Sidebar */}
-                <aside className="w-64 bg-white border-r border-gray-300 flex flex-col pt-4">
-                    <nav className="flex-1 px-4 py-6 space-y-4">
+                <aside className="w-72 bg-white shadow-lg border-r border-gray-200 flex flex-col p-6">
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">{groupName}</h2>
+                    
+                    <nav className="space-y-4">
+                        
+                        <button
+                            onClick={() => setActiveTab("chat")}
+                            className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
+                                activeTab === "chat" ? "text-blue-500" : "text-gray-700"
+                            }`}
+                        >
+                            <FiMessageSquare className="mr-3 text-2xl" />
+                            Chat
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("sondages")}
+                            className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
+                                activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
+                            }`}
+                        >
+                            <FiSettings className="mr-3 text-2xl" />
+                            Sondages
+                        </button>
+                        {createur === userId && (
+                            <button
+                                onClick={() => setActiveTab("parametres")}
+                                className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
+                                    activeTab === "parametres" ? "text-blue-500" : "text-gray-700"
+                                }`}
+                            >
+                                <FiSettings className="mr-3 text-2xl" />
+                                Paramètres
+                            </button>
+                        )}
                         {createur !== userId && (
                             <button
                                 onClick={handleLeaveGroup}
@@ -112,44 +170,39 @@ const GroupPage = () => {
                                 Quitter le groupe
                             </button>
                         )}
-                        <button
-                            onClick={() => setActiveTab("chat")}
-                            className={`flex items-center text-lg font-medium ${activeTab === "chat" ? "text-blue-500" : "text-gray-700"} hover:text-blue-500 transition duration-300`}
-                        >
-                            <FiMessageSquare className="mr-3 text-2xl" />
-                            Chat
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("sondages")}
-                            className={`flex items-center text-lg font-medium ${activeTab === "sondages" ? "text-blue-500" : "text-gray-700"} hover:text-blue-500 transition duration-300`}
-                        >
-                            <FiSettings className="mr-3 text-2xl" />
-                            Sondages
-                        </button>
-                        {createur === userId && (
-                            <button
-                                onClick={() => setActiveTab("parametres")}
-                                className={`flex items-center text-lg font-medium ${activeTab === "parametres" ? "text-blue-500" : "text-gray-700"} hover:text-blue-500 transition duration-300`}
-                            >
-                                <FiSettings className="mr-3 text-2xl" />
-                                Paramètres
-                            </button>
-                        )}
                     </nav>
                 </aside>
-
+    
                 {/* Main Content */}
-                <div
-                    className="flex-1 p-6 bg-cover bg-center"
-                    style={{ backgroundImage: activeTab === "chat" ? "url('/chat1.jpg')" : "url('/sondage1.jpg')" }}
-                >
-                    {activeTab === "chat" && <Chat groupeId={groupeId} userId={userId} />}
-                    {activeTab === "sondages" && <Sondage groupeId={groupeId} />}
-                    {activeTab === "parametres" && <ParamsGroupe groupeId={groupeId} />}
+                <div className="flex-1 flex flex-col items-center justify-center bg-gray-100">
+                    <div
+                        className="relative w-full max-w-5xl bg-white shadow-2xl rounded-2xl p-8 mt-12 mb-12"
+                        style={{ minHeight: "75vh" }}
+                    >
+                        {/* Background Image Effect */}
+                        <div
+                            className="absolute inset-0 rounded-2xl"
+                            style={{
+                                backgroundImage: activeTab === "chat" ? "url('/chat1.jpg')" : "url('/sondage1.jpg')",
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                                opacity: "0.15",
+                            }}
+                        ></div>
+    
+                        {/* Content Overlay */}
+                        <div className="relative z-10">
+                            {activeTab === "chat" && groupeId && userId && <Chat groupeId={groupeId} userId={userId} />}
+                            {activeTab === "sondages" && groupeId && <Sondage groupeId={groupeId} />}
+                            {activeTab === "parametres" && groupeId && <ParamsGroupe groupeId={groupeId} />}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     );
+    
+
 };
 
 export default GroupPage;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link,  } from "react-router-dom";
 import {
   collection,
   addDoc,
@@ -11,20 +11,27 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../config/firebase-config";
+import { useParams } from "react-router"
 import { getAuth } from "firebase/auth";
 
-const Sondage = () => {
+const Sondage = ({ groupeId }) => {
   const [polls, setPolls] = useState([]);
   const [newPoll, setNewPoll] = useState("");
   const [options, setOptions] = useState([""]);
   const [expirationDate, setExpirationDate] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const auth = getAuth();
+  console.log("groupeId dans Sondage:", groupeId)
 
   useEffect(() => {
-    const pollsRef = collection(db, "sondages");
+    if (!groupeId) {
+      console.error("Aucun groupe sélectionné !");
+      return;
+    }
+  
+    const pollsRef = collection(db, "groups", groupeId, "sondages");
     const pollsQuery = query(pollsRef, orderBy("date", "desc"));
-
+  
     const unsubscribe = onSnapshot(pollsQuery, (snapshot) => {
       const pollData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -32,9 +39,10 @@ const Sondage = () => {
       }));
       setPolls(pollData);
     });
-
+  
     return () => unsubscribe();
-  }, []);
+  }, [groupeId, db]);
+  
 
   const isPollExpired = (poll) => {
     if (!poll.expiration) return false;
@@ -44,13 +52,18 @@ const Sondage = () => {
   };
 
   const handleAddPoll = async () => {
+    if (!groupeId) {
+      alert("Erreur : aucun groupe sélectionné.");
+      return;
+    }
+  
     if (!newPoll.trim() || options.some((opt) => !opt.trim())) {
       alert("Veuillez fournir une question et des options valides.");
       return;
     }
-
+  
     try {
-      const pollsRef = collection(db, "sondages");
+      const pollsRef = collection(db, "groups", groupeId, "sondages");
       await addDoc(pollsRef, {
         question: newPoll.trim(),
         options: options.map((opt) => opt.trim()),
@@ -59,7 +72,7 @@ const Sondage = () => {
         date: serverTimestamp(),
         expiration: new Date(expirationDate),
       });
-
+  
       setNewPoll("");
       setOptions([""]);
       setExpirationDate("");
@@ -68,10 +81,10 @@ const Sondage = () => {
       console.error("Erreur lors de la création du sondage:", error);
     }
   };
-
+  
   const handleDeletePoll = async (pollId) => {
     try {
-      const pollDocRef = doc(db, "sondages", pollId);
+      const pollDocRef = doc(db, "groups", groupeId, "sondages", pollId);
       await deleteDoc(pollDocRef);
     } catch (error) {
       console.error("Erreur lors de la suppression du sondage:", error);
@@ -244,7 +257,7 @@ const Sondage = () => {
                   </div>
 
                   <Link
-                    to={`/sondages/${poll.id}`}
+                    to={`/group/${groupeId}/sondages/${poll.id}`}
                     className="mt-4 inline-block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     {isExpired ? "Voir résultats" : "Participer"}
