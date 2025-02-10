@@ -6,7 +6,7 @@ import {Link, useNavigate} from "react-router-dom";
 import {addDoc, collection, doc, getDocs, getFirestore, onSnapshot, query, updateDoc, where} from "firebase/firestore";
 import {app, db, auth} from "../config/firebase-config.js";
 import {getAuth, signOut} from "firebase/auth";
-import background from "/public/voyages.jpg";
+// import background from "/public/voyages.jpg";
 
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -309,7 +309,7 @@ const Voyages = () => {
     };
 
     return (
-        <div style={{ backgroundImage: `url(${background})` }}>
+        <div /*style={{ backgroundImage: `url(${background})` }}*/>
             {/* Navbar */}
             <nav className="bg-white shadow-md">
                 <div className="container mx-auto px-4 py-6 flex items-center justify-between">
@@ -329,7 +329,7 @@ const Voyages = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">
+                                        <Link to="/groupes" className="text-lg text-gray-700 hover:text-gray-900">
                                             Groupes
                                         </Link>
                                     </li>
