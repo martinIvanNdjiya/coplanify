@@ -6,6 +6,8 @@ import Amadeus from "amadeus";
 
 dotenv.config();
 
+console.log('AMADEUS_CLIENT_ID:', process.env.AMADEUS_CLIENT_ID);
+
 const app = express();
 const amadeus = new Amadeus({
   clientId: process.env.AMADEUS_CLIENT_ID,
