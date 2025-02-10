@@ -6,6 +6,7 @@ import {Link, useNavigate} from "react-router-dom";
 import {addDoc, collection, doc, getDocs, getFirestore, onSnapshot, query, updateDoc, where} from "firebase/firestore";
 import {app, db, auth} from "../config/firebase-config.js";
 import {getAuth, signOut} from "firebase/auth";
+import background from "/public/voyages.jpg";
 
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -20,34 +21,45 @@ const FlightResultCard = ({offer, currency}) => {
     const {price, itineraries, oneWay} = offer;
     const [isModalOpenGroup, setIsModalOpenGroup] = useState(false); // Comment modal
     const [groups, setGroups] = useState([]);
+    const [segmentIndex, setSegmentIndex] = useState(null);
     const user = auth.currentUser;
     const [newMessage, setMessage] = useState("");
 
+    console.log('Selected segment index:', segmentIndex);
+    if (segmentIndex < 0 || segmentIndex >= itineraries[0].segments.length) {
+        console.error('Invalid segment index');
+        return;  // Exit if the index is invalid
+    }
+
     useEffect(() => {
         const unsubscribe = onSnapshot(
-            query(collection(db, "groups"), where("createur", "==", user.uid)),
+            query(collection(db, "groups"), where("participants", "array-contains", user.uid)),
             (snapshot) => {
-                const updatedGroups = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                const updatedGroups = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
                 setGroups(updatedGroups);
             },
             (error) => {
                 console.error("Error fetching groups: ", error);
             }
         );
-
-        // Cleanup the listener when the component is unmounted
         return () => unsubscribe();
-    }, [user.uid]);  // Adding user.uid as a dependency, so it'll update when user changes
+    }, [user.uid]);
 
 
-
-    const shareTripInGroupChat = async (groupId) => {
+    const shareTripInGroupChat = async (groupId, segmentIndex) => {
         const user = auth.currentUser;
+        const itinerary = itineraries[0];
+
+        const segment = itinerary.segments[segmentIndex];
+
         const message = {
-            message: newMessage + ": " + offer,
+            message: `Price: ${price.currency} ${price.total}, Duration: ${itinerary.duration}, 
+                  Depart: ${segment.departure.iataCode}, 
+                  Arrive: ${segment.arrival.iataCode} `,
             date: new Date(),
             idUtilisateur: user.uid,
         };
+
 
         await addDoc(collection(db, "groups", groupId, "messages"), message);
         setMessage("");
@@ -56,94 +68,89 @@ const FlightResultCard = ({offer, currency}) => {
 
 
     return (
-        <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">{oneWay ? "Aller Simple" : "Aller-Retour"}</h3>
-                <div className="flex items-center">
-                    <span className="text-gray-500 text-lg mr-2">Prix: </span>
-                    <span className="text-xl font-semibold">{price.currency} {price.total}</span>
-                </div>
-            </div>
-
-            {/* Itinerary Information */}
-            <div className="space-y-4">
-                {itineraries.map((itinerary, idx) => (
-                    <div key={idx} className="border-t border-gray-200 pt-4">
-                        <div className="text-sm text-gray-500 mb-2">
-                            <FiClock className="inline mr-1"/>
-                            Durée: {itinerary.duration}
-                        </div>
-                        <div className="text-sm text-gray-500 mb-2">Segments:</div>
-
-                        <ul className="space-y-2">
-                            {itinerary.segments.map((segment, segmentIdx) => (
-                                <li key={segmentIdx}
-                                    className="flex flex-col sm:flex-row justify-between sm:items-center py-2">
-                                    <div className="flex-1">
-                                        <p>
-                                            <strong>Départ:</strong> {segment.departure.iataCode} à {format(new Date(segment.departure.at), 'dd/MM/yyyy HH:mm')}
-                                        </p>
-                                        <p>
-                                            <strong>Arrivée:</strong> {segment.arrival.iataCode} à {format(new Date(segment.arrival.at), 'dd/MM/yyyy HH:mm')}
-                                        </p>
-                                    </div>
-                                    <div className="sm:ml-4 mt-2 sm:mt-0 flex items-center text-gray-500">
-                                        <FiUsers className="mr-2"/>
-                                        {segment.passengerCount} passager{segment.passengerCount > 0 ? 's' : ''}
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+        <div className="flex justify-center mx-[200px]">
+            <div className="bg-white shadow-lg p-6 rounded-lg w-full">
+                <div>
+                    <h3>{oneWay ? "Aller Simple" : "Aller-Retour"}</h3>
+                    <div>
+                        <span> <strong>Prix: </strong> </span>
+                        <span>{price.currency} {price.total}</span>
                     </div>
-                ))}
-            </div>
+                </div>
 
-            <button onClick={() => setIsModalOpenGroup(true)}>
-                <FaShare style={{fontSize: '25px', color: '#4C9BCE'}}/>
-            </button>
+                {/* Itinerary Information */}
+                <div>
+                    {itineraries.map((itinerary, idx) => (
+                        <div key={idx}>
+                            <div>
+                                <strong>Durée:</strong> {itinerary.duration}
+                            </div>
+                            <div>Segments:</div>
 
-            {isModalOpenGroup && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-content">
-                            <button className="modal-close" onClick={() => setIsModalOpenGroup(false)}>×</button>
-
-                            <div className="columns is-centered">
-                                <div className="columns is-multiline is-mobile">
-                                    <div className="column is-full">
-                                        <select className="select">
-                                            {groups.map((g) => (
-                                                <option key={g.id} value={g.id}>
-                                                    <span className="title is-6 has-text-weight-bold">{g.name}</span>
-                                                    {' - '}
-                                                    <span>{g.description}</span>
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="column is-full mt-3">
-                                        <textarea
-                                            className="textarea"
-                                            placeholder="Type your message..."
-                                            value={newMessage}
-                                            onChange={(e) => setMessage(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="column is-full">
-                                        <button className="button is-info" onClick={() => shareTripInGroupChat(groups[0].id)}>
-                                            <FaPaperPlane /> Send a message
+                            <ul>
+                                {itinerary.segments.map((segment, segmentIdx) => (
+                                    <li key={segmentIdx}>
+                                        <div>
+                                            <p>
+                                                <strong>Départ:</strong> {segment.departure.iataCode} à {format(new Date(segment.departure.at), 'dd/MM/yyyy HH:mm')}
+                                            </p>
+                                            <p>
+                                                <strong>Arrivée:</strong> {segment.arrival.iataCode} à {format(new Date(segment.arrival.at), 'dd/MM/yyyy HH:mm')}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setIsModalOpenGroup(true) && setSegmentIndex(segmentIdx)}>
+                                            <FaShare/>
                                         </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+
+                {isModalOpenGroup && (
+                    <div>
+                        <div>
+                            <div>
+                                <button onClick={() => setIsModalOpenGroup(false)}>×</button>
+
+                                <div>
+                                    <div>
+                                        <div>
+                                            <select>
+                                                {groups.map((g) => (
+                                                    <option key={g.id} value={g.id}>
+                                                        <span>{g.name}</span>
+                                                        {' - '}
+                                                        <span>{g.description}</span>
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                    <textarea
+                                        placeholder="Type your message..."
+                                        value={newMessage}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                    />
+                                        </div>
+
+                                        <div>
+                                            <button onClick={() => shareTripInGroupChat(groups[0].id, segmentIndex)}>
+                                                <FaPaperPlane/>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
-    );
+    )
 };
 
 const Voyages = () => {
@@ -187,7 +194,7 @@ const Voyages = () => {
                 else if (!cityCodes[name][value.toLowerCase()]) {
                     console.warn('Codes disponibles:', cityCodes[name]);
                     error = 'Ville non reconnue';
-                  }
+                }
                 break;
             case 'departureDate':
                 if (!isValid(new Date(value))) error = 'Date invalide';
@@ -198,7 +205,7 @@ const Voyages = () => {
                 }
                 break;
         }
-        setErrors(prev => ({ ...prev, [name]: error }));
+        setErrors(prev => ({...prev, [name]: error}));
         return !error;
     };
 
@@ -214,18 +221,18 @@ const Voyages = () => {
                 acc.options.push(`${entry.name} (${entry.iataCode})`);
                 acc.codes[`${entry.name} (${entry.iataCode})`.toLowerCase()] = entry.iataCode;
                 return acc;
-            }, { options: [], codes: {} });
+            }, {options: [], codes: {}});
         } catch (error) {
             console.error('Autocomplete error:', error);
-            return { options: [], codes: {} };
+            return {options: [], codes: {}};
         }
     };
 
     useEffect(() => {
         const updateAutocomplete = async (type) => {
-            const { options: newOptions, codes } = await fetchAutocomplete(type, debouncedOrigin);
-            setOptions(prev => ({ ...prev, [type]: newOptions }));
-            setCityCodes(prev => ({ ...prev, [type]: codes }));
+            const {options: newOptions, codes} = await fetchAutocomplete(type, debouncedOrigin);
+            setOptions(prev => ({...prev, [type]: newOptions}));
+            setCityCodes(prev => ({...prev, [type]: codes}));
         };
 
         if (debouncedOrigin) updateAutocomplete('origin');
@@ -233,8 +240,8 @@ const Voyages = () => {
 
     useEffect(() => {
         const updateAutocomplete = async (type) => {
-            const { options: newOptions, codes } = await fetchAutocomplete(type, debouncedDestination);
-            setOptions(prev => ({ ...prev, [type]: newOptions }));
+            const {options: newOptions, codes} = await fetchAutocomplete(type, debouncedDestination);
+            setOptions(prev => ({...prev, [type]: newOptions}));
             setCityCodes(prev => ({ ...prev, [type]: codes }));
         };
 
@@ -302,7 +309,7 @@ const Voyages = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-4">
+        <div style={{ backgroundImage: `url(${background})` }}>
             {/* Navbar */}
             <nav className="bg-white shadow-md">
                 <div className="container mx-auto px-4 py-6 flex items-center justify-between">
@@ -322,7 +329,7 @@ const Voyages = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link to="/groupes" className="text-lg text-gray-700 hover:text-gray-900">
+                                        <Link to="/chat" className="text-lg text-gray-700 hover:text-gray-900">
                                             Groupes
                                         </Link>
                                     </li>
@@ -356,10 +363,10 @@ const Voyages = () => {
                 </div>
             </nav>
             {/* Search Form */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <div className=" rounded-2xl shadow-xl p-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-700">Départ de</label>
+                        <label className="block text-sm font-medium mb-2 text-white">Départ de</label>
                         <div className="relative">
                             <input
                                 list="originOptions"
@@ -378,7 +385,7 @@ const Voyages = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-700">Destination</label>
+                        <label className="block text-sm font-medium mb-2 text-white">Destination</label>
                         <div className="relative">
                             <input
                                 list="destinationOptions"
@@ -399,7 +406,7 @@ const Voyages = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-700">Date de départ</label>
+                        <label className="block text-sm font-medium mb-2 text-white">Date de départ</label>
                         <div className="relative">
                             <input
                                 type="date"
@@ -414,7 +421,7 @@ const Voyages = () => {
 
                     {form.flightType === 'round-trip' && (
                         <div>
-                            <label className="block text-sm font-medium mb-2 text-gray-700">Date de retour</label>
+                            <label className="block text-sm font-medium mb-2 text-white">Date de retour</label>
                             <div className="relative">
                                 <input
                                     type="date"
@@ -429,7 +436,7 @@ const Voyages = () => {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-700">Type de vol</label>
+                        <label className="block text-sm font-medium mb-2 text-white">Type de vol</label>
                         <select
                             value={form.flightType}
                             onChange={(e) => setForm(prev => ({ ...prev, flightType: e.target.value }))}
@@ -443,7 +450,7 @@ const Voyages = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-700">Classe</label>
+                        <label className="block text-sm font-medium mb-2 text-white">Classe</label>
                         <select
                             value={form.travelClass}
                             onChange={(e) => setForm(prev => ({ ...prev, travelClass: e.target.value }))}
@@ -457,7 +464,7 @@ const Voyages = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-700">Passagers</label>
+                        <label className="block text-sm font-medium mb-2 text-white">Passagers</label>
                         <div className="flex items-center gap-2">
                             <FiUsers className="text-gray-400" />
                             <input

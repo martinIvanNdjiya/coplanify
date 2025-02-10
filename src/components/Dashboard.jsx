@@ -15,6 +15,15 @@ const Dashboard = () => {
   const [groups, setGroups] = useState([]);
   const [connectedFriends, setConnectedFriends] = useState([]);
   const [amis, setAmis] = useState([]);
+  const [sondages, setSondages] = useState([]);
+
+  const convertTimestampToDate = (timestamp) => {
+    if (timestamp && timestamp.seconds) {
+      const date = new Date(timestamp.seconds * 1000);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+    return "Indisponible";
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -54,12 +63,21 @@ const Dashboard = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      console.log("Real-time groups:", groupData);
-      setGroups(groupData);
+
+      // Filter groups where the current user is either the creator or a participant
+      const filteredGroups = groupData.filter(group => 
+        group.createur === userProfile.uid || group.participants.includes(userProfile.uid)
+      );
+
+      // Sort groups by createdAt field in descending order and take the 3 most recent
+      const sortedGroups = filteredGroups.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds).slice(0, 3);
+
+      console.log("Filtered and sorted groups:", sortedGroups);
+      setGroups(sortedGroups);
     });
 
     return () => unsubscribe();
-  }, [db]);
+  }, [db, userProfile]);
 
   useEffect(() => {
     const fetchConnectedFriends = async () => {
@@ -83,6 +101,28 @@ const Dashboard = () => {
 
     fetchConnectedFriends();
   }, [userProfile, db, amis]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "sondages"), (snapshot) => {
+      const sondageData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Filter sondages where the current user is the creator
+      const filteredSondages = sondageData.filter(sondage => 
+        sondage.creator === userProfile.uid
+      );
+
+      // Sort sondages by date field in descending order and take the 3 most recent
+      const sortedSondages = filteredSondages.sort((a, b) => b.date.seconds - a.date.seconds).slice(0, 3);
+
+      console.log("Filtered and sorted sondages:", sortedSondages);
+      setSondages(sortedSondages);
+    });
+
+    return () => unsubscribe();
+  }, [db, userProfile]);
 
   const handleLogout = async () => {
       try {
@@ -217,15 +257,22 @@ const Dashboard = () => {
                 ))}
               </div>
             </section>
+            
             {/* Section Sondages */}
             <section className="mt-12">
               <h2 className="text-5xl font-extrabold text-white drop-shadow-md mb-6">Sondages récents</h2>
               {/* Grille de cartes sondages */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div className="bg-white bg-opacity-70 rounded-xl p-6 transition duration-300">
-                  <h3 className="text-2xl font-bold text-black mb-4">Destination préférée ?</h3>
-                  <p className="text-lg text-gray-800">📊 Statut : Ouvert</p>
-                </div>
+                {sondages.map((sondage) => (
+                  <div
+                    key={sondage.id}
+                    onClick={() => navigate(`/sondages/${sondage.id}`)} // Navigate to the sondage page
+                    className="bg-white bg-opacity-70 rounded-xl p-6 transition duration-300 cursor-pointer hover:shadow-lg"
+                  >
+                    <h3 className="text-2xl font-bold text-black mb-4">{sondage.question || "Titre indisponible"}</h3>
+                    <p className="text-lg text-gray-800">📊 Expiration : {convertTimestampToDate(sondage.expiration)}</p>
+                  </div>
+                ))}
               </div>
             </section>
             
