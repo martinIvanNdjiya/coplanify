@@ -99,7 +99,10 @@ const FlightResultCard = ({offer, currency}) => {
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => setIsModalOpenGroup(true) && setSegmentIndex(segmentIdx)}>
+                                            onClick={() => {
+                                                setIsModalOpenGroup(true);
+                                                setSegmentIndex(segmentIdx)
+                                            }}>
                                             <FaShare/>
                                         </button>
                                     </li>
