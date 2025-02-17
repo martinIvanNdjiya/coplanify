@@ -75,6 +75,49 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+app.get("/api/airport", async (req, res) => {
+  try {
+    const { iataCode } = req.query;
+    if (!iataCode) {
+      return res.status(400).json({
+        error: "Le paramètre 'iataCode' est requis"
+      });
+    }
+
+    //Aeroport par rapport au code iata
+    const response = await amadeus.referenceData.locations.get({
+      keyword: iataCode,    
+      subType: 'AIRPORT'   
+    });
+
+    const { data } = response;
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        error: `Aucun aéroport trouvé pour IATA: ${iataCode}`
+      });
+    }
+    const airport = data[0];
+    if (!airport.geoCode) {
+      return res.status(404).json({
+        error: `Les coordonnées (geoCode) sont introuvables pour IATA: ${iataCode}`
+      });
+    }
+    return res.json({
+      latitude: airport.geoCode.latitude,
+      longitude: airport.geoCode.longitude,
+      countryCode: airport.address?.countryCode || null
+    });
+  } catch (error) {
+    console.error("Erreur /api/airport:", error);
+    const status = error.response?.statusCode || 500;
+    return res.status(status).json({
+      error: true,
+      message: error.message,
+      details: error.response?.data?.errors || []
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

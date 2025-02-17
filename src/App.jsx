@@ -11,6 +11,7 @@ import Sondage from "./components/Sondage.jsx";
 import SondageDetails from "./components/sondageDetails.jsx";
 import Amis from "./components/Amis.jsx";
 import Groupes from './components/Groupes.jsx';
+import VoyageDetails from './components/VoyageDetails .jsx'
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profil" element={<Profile />} />
           <Route path="/voyages" element={<Voyages />} />
+          <Route path="/voyage/:id" element={<VoyageDetails />} />
           <Route path="/group/:groupeId/chat" element={<Chat />} />
           <Route path="/group/:groupName" element={<GroupPage />} />
           <Route path="/group/:groupId/sondages" element={<Sondage />} />
