@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link,  } from "react-router-dom";
+import { ArrowLeft } from "react-feather";
 import {
   collection,
   addDoc,
@@ -11,8 +11,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../config/firebase-config";
-import { useParams } from "react-router"
 import { getAuth } from "firebase/auth";
+import SondageDetails from "./sondageDetails";
 
 const Sondage = ({ groupeId }) => {
   const [polls, setPolls] = useState([]);
@@ -20,6 +20,7 @@ const Sondage = ({ groupeId }) => {
   const [options, setOptions] = useState([""]);
   const [expirationDate, setExpirationDate] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedPoll, setSelectedPoll] = useState(null);
   const auth = getAuth();
   console.log("groupeId dans Sondage:", groupeId)
 
@@ -28,10 +29,10 @@ const Sondage = ({ groupeId }) => {
       console.error("Aucun groupe sélectionné !");
       return;
     }
-  
+
     const pollsRef = collection(db, "groups", groupeId, "sondages");
     const pollsQuery = query(pollsRef, orderBy("date", "desc"));
-  
+
     const unsubscribe = onSnapshot(pollsQuery, (snapshot) => {
       const pollData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -39,10 +40,9 @@ const Sondage = ({ groupeId }) => {
       }));
       setPolls(pollData);
     });
-  
+
     return () => unsubscribe();
   }, [groupeId, db]);
-  
 
   const isPollExpired = (poll) => {
     if (!poll.expiration) return false;
@@ -56,12 +56,12 @@ const Sondage = ({ groupeId }) => {
       alert("Erreur : aucun groupe sélectionné.");
       return;
     }
-  
+
     if (!newPoll.trim() || options.some((opt) => !opt.trim())) {
       alert("Veuillez fournir une question et des options valides.");
       return;
     }
-  
+
     try {
       const pollsRef = collection(db, "groups", groupeId, "sondages");
       await addDoc(pollsRef, {
@@ -72,7 +72,7 @@ const Sondage = ({ groupeId }) => {
         date: serverTimestamp(),
         expiration: new Date(expirationDate),
       });
-  
+
       setNewPoll("");
       setOptions([""]);
       setExpirationDate("");
@@ -81,7 +81,7 @@ const Sondage = ({ groupeId }) => {
       console.error("Erreur lors de la création du sondage:", error);
     }
   };
-  
+
   const handleDeletePoll = async (pollId) => {
     try {
       const pollDocRef = doc(db, "groups", groupeId, "sondages", pollId);
@@ -92,7 +92,7 @@ const Sondage = ({ groupeId }) => {
   };
 
   const handleAddOption = () => setOptions([...options, ""]);
-  
+
   const handleRemoveOption = (index) => {
     if (options.length > 1) {
       setOptions(options.filter((_, i) => i !== index));
@@ -105,87 +105,18 @@ const Sondage = ({ groupeId }) => {
     setOptions(updatedOptions);
   };
 
+  const handleOpenPoll = (poll) => {
+    setSelectedPoll(poll);
+  };
+
+  const handleClosePoll = () => {
+    setSelectedPoll(null);
+  };
+
   return (
     <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/votre-image.jpg)' }}>
       <div className="max-w-6xl mx-auto px-4 py-8 backdrop-blur-sm">
-        <h1 className="text-4xl font-bold text-center text-blue-600 mb-8 drop-shadow-lg">
-          Sondages du groupe
-        </h1>
-
-        {isCreating ? (
-          <div className="bg-white/90 p-6 rounded-xl shadow-xl border border-blue-100 mb-8">
-            <h2 className="text-2xl font-semibold text-blue-800 mb-4">Nouveau sondage</h2>
-            <input
-              type="text"
-              value={newPoll}
-              onChange={(e) => setNewPoll(e.target.value)}
-              placeholder="Question du sondage..."
-              className="w-full p-3 border border-blue-200 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
-            />
-            
-            <div className="space-y-3 mb-4">
-              {options.map((option, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    value={option}
-                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                    className="flex-1 p-2 border border-blue-200 rounded-lg"
-                  />
-                  <button
-                    onClick={() => handleRemoveOption(index)}
-                    disabled={options.length <= 1}
-                    className="p-2 text-red-500 hover:text-red-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-4 mb-4">
-              <button
-                onClick={handleAddOption}
-                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
-              >
-                + Ajouter une option
-              </button>
-              
-              <input
-                type="datetime-local"
-                value={expirationDate}
-                onChange={(e) => setExpirationDate(e.target.value)}
-                required
-                className="p-2 border border-blue-200 rounded-lg"
-              />
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={handleAddPoll}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Publier
-              </button>
-              <button
-                onClick={() => setIsCreating(false)}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsCreating(true)}
-            className="mb-8 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
-          >
-            Créer un sondage
-          </button>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[45vh] overflow-y-auto">
           {polls.map((poll) => {
             const totalVotes = poll.votes.reduce((a, b) => a + b, 0);
             const isExpired = isPollExpired(poll);
@@ -256,12 +187,12 @@ const Sondage = ({ groupeId }) => {
                     )}
                   </div>
 
-                  <Link
-                    to={`/group/${groupeId}/sondages/${poll.id}`}
+                  <button
+                    onClick={() => handleOpenPoll(poll)}
                     className="mt-4 inline-block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     {isExpired ? "Voir résultats" : "Participer"}
-                  </Link>
+                  </button>
                 </div>
               </div>
             );
@@ -272,6 +203,99 @@ const Sondage = ({ groupeId }) => {
           <p className="text-center text-gray-500 mt-8">
             Aucun sondage disponible pour le moment.
           </p>
+        )}
+
+        <div className="flex justify-end mt-8">
+          <button
+            onClick={() => setIsCreating(true)}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+          >
+            Créer un sondage
+          </button>
+        </div>
+
+        {isCreating && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-xl shadow-xl border border-blue-100 max-w-lg w-full">
+              <h2 className="text-2xl font-semibold text-blue-800 mb-4">Nouveau sondage</h2>
+              <input
+                type="text"
+                value={newPoll}
+                onChange={(e) => setNewPoll(e.target.value)}
+                placeholder="Question du sondage..."
+                className="w-full p-3 border border-blue-200 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
+              />
+              
+              <div className="space-y-3 mb-4">
+                {options.map((option, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      placeholder={`Option ${index + 1}`}
+                      className="flex-1 p-2 border border-blue-200 rounded-lg"
+                    />
+                    <button
+                      onClick={() => handleRemoveOption(index)}
+                      disabled={options.length <= 1}
+                      className="p-2 text-red-500 hover:text-red-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-4 mb-4">
+                <button
+                  onClick={handleAddOption}
+                  className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
+                >
+                  + Ajouter une option
+                </button>
+                
+                <input
+                  type="datetime-local"
+                  value={expirationDate}
+                  onChange={(e) => setExpirationDate(e.target.value)}
+                  required
+                  className="p-2 border border-blue-200 rounded-lg"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={handleAddPoll}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Publier
+                </button>
+                <button
+                  onClick={() => setIsCreating(false)}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedPoll && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-xl shadow-xl border border-blue-100 max-w-lg w-full h-full">
+              <button
+                onClick={handleClosePoll}
+                className="flex items-center text-blue-600 hover:text-blue-800 transition-colors mb-4"
+              >
+                <ArrowLeft className="mr-2" /> Retour aux sondages
+              </button>
+              <div className="flex-1 overflow-auto">
+                <SondageDetails groupId={groupeId} pollId={selectedPoll.id} />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

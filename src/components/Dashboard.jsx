@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch, FiMessageSquare, FiX } from "react-icons/fi";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch, FiMessageSquare, FiX, FiGrid } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, query as firebaseQuery, collection, where, getDocs, onSnapshot, updateDoc, doc } from "firebase/firestore";
@@ -209,24 +209,46 @@ const Dashboard = () => {
       <aside className="fixed top-0 left-0 h-full w-64 bg-white flex flex-col">
         {/* Header combiné */}
         <header className="bg-white p-6 border-b border-gray-300">
-          <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
+          <Link to="/" className="text-4xl font-extrabold text-blue-500">
+            Coplanify
+          </Link>
         </header>
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-4">
-          <Link to="/voyages" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+          <Link
+            to="/dashboard"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiGrid className="mr-3 text-2xl" />
+            Tableau de bord
+          </Link>
+
+          <Link
+            to="/voyages"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
             <FiAirplay className="mr-3 text-2xl" />
             Voyages
           </Link>
-          <Link to="/groupes" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+          <Link
+            to="/groupes"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
             <FiMessageSquare className="mr-3 text-2xl" />
             Groupes
           </Link>
-          <Link to="/amis" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+          <Link
+            to="/amis"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
             <FiUsers className="mr-3 text-2xl" />
             Amis
           </Link>
-          <Link to="/profil" className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300">
+          <Link
+            to="/profil"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
             <FiUser className="mr-3 text-2xl" />
             Profil
           </Link>
@@ -234,7 +256,10 @@ const Dashboard = () => {
 
         {/* Bouton de déconnexion */}
         <div className="px-4 py-6">
-          <button onClick={handleLogout} className="w-full flex items-center justify-center text-lg text-red-600 hover:text-red-700">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center text-lg text-red-600 hover:text-red-700"
+          >
             <FiLogOut className="mr-3 text-2xl" />
             Déconnexion
           </button>
@@ -266,47 +291,59 @@ const Dashboard = () => {
             />
           )}
         </header>
-        
 
         {showSearchResults && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Résultats de recherche</h2>
-              <button onClick={() => setShowSearchResults(false)} className="text-gray-600 hover:text-gray-800">
-                <FiX className="h-6 w-6" />
-              </button>
-            </div>
-            {searchResults.length > 0 ? (
-              <div className="space-y-4">
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    onClick={() => {
-                      if (result.groupId) {
-                        navigate(`/group/${result.groupId}/sondages/${result.id}`);
-                      } else {
-                        navigate(`/group/${result.name}`);
-                      }
-                      setShowSearchResults(false);
-                    }}
-                    className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition duration-300 cursor-pointer"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {result.name || result.question || "Nom indisponible"}
-                    </h3>
-                    <p className="text-gray-600">
-                      {result.description || (result.expiration && `Expiration : ${convertTimestampToDate(result.expiration)}`)}
-                    </p>
-                  </div>
-                ))}
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Résultats de recherche
+                </h2>
+                <button
+                  onClick={() => setShowSearchResults(false)}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  <FiX className="h-6 w-6" />
+                </button>
               </div>
-            ) : (
-              <p className="text-center text-gray-600">Aucun résultat trouvé.</p>
-            )}
+              {searchResults.length > 0 ? (
+                <div className="space-y-4">
+                  {searchResults.map((result) => (
+                    <div
+                      key={result.id}
+                      onClick={() => {
+                        if (result.groupId) {
+                          navigate(
+                            `/group/${result.groupId}/sondages/${result.id}`
+                          );
+                        } else {
+                          navigate(`/group/${result.name}`);
+                        }
+                        setShowSearchResults(false);
+                      }}
+                      className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition duration-300 cursor-pointer"
+                    >
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {result.name || result.question || "Nom indisponible"}
+                      </h3>
+                      <p className="text-gray-600">
+                        {result.description ||
+                          (result.expiration &&
+                            `Expiration : ${convertTimestampToDate(
+                              result.expiration
+                            )}`)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-600">
+                  Aucun résultat trouvé.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
         {/* Zone centrale */}
         <div className="relative flex-1 p-6 overflow-y-auto">
@@ -323,8 +360,9 @@ const Dashboard = () => {
             {/* Section Voyages */}
             <section>
               <div className="flex justify-between items-center mb-8">
-                <h2 className="text-5xl font-extrabold text-white drop-shadow-md">Voyages en cours</h2>
-
+                <h2 className="text-5xl font-extrabold text-white drop-shadow-md">
+                  Voyages en cours
+                </h2>
 
                 <button
                   onClick={() => setShowCreateGroupModal(true)}
@@ -336,7 +374,6 @@ const Dashboard = () => {
                 {showCreateGroupModal && (
                   <CreateGroup onClose={() => setShowCreateGroupModal(false)} />
                 )}
-
               </div>
               {/* Grille de cartes voyages */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -356,25 +393,36 @@ const Dashboard = () => {
                 ))}
               </div>
             </section>
-            
+
             {/* Section Sondages */}
             <section className="mt-12">
-              <h2 className="text-5xl font-extrabold text-white drop-shadow-md mb-6">Sondages récents</h2>
+              <h2 className="text-5xl font-extrabold text-white drop-shadow-md mb-6">
+                Sondages récents
+              </h2>
               {/* Grille de cartes sondages */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {sondages.map((sondage) => (
                   <div
                     key={sondage.id}
-                    onClick={() => navigate(`/group/${sondage.groupId}/sondages/${sondage.id}`)} // Navigate to the sondage page
+                    onClick={() =>
+                      navigate(
+                        `/group/${sondage.groupId}/sondages/${sondage.id}`
+                      )
+                    } // Navigate to the sondage page
                     className="bg-white bg-opacity-90 rounded-xl p-6 transition-all hover:scale-105 hover:shadow-2xl border border-gray-200"
                   >
-                    <h3 className="text-2xl font-bold text-black mb-4">{sondage.question || "Titre indisponible"}</h3>
-                    <p className="text-lg text-gray-800">📊 Expiration : {convertTimestampToDate(sondage.expiration)}</p>
+                    <h3 className="text-2xl font-bold text-black mb-4">
+                      {sondage.question || "Titre indisponible"}
+                    </h3>
+                    <p className="text-lg text-gray-800">
+                      📊 Expiration :{" "}
+                      {convertTimestampToDate(sondage.expiration)}
+                    </p>
                   </div>
                 ))}
               </div>
             </section>
-            
+
             {/* Section Amis connectés */}
             <section className="mt-12">
               <h2 className="text-5xl font-extrabold text-white drop-shadow-md mb-6">
@@ -409,7 +457,9 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center bg-white/80 rounded-xl shadow-lg p-10 text-center mt-12 max-w-lg ">
-                  <h3 className="text-2xl font-bold text-gray-700">Aucun ami connecté</h3>
+                  <h3 className="text-2xl font-bold text-gray-700">
+                    Aucun ami connecté
+                  </h3>
                   <p className="text-gray-600 mt-2">
                     Invitez vos amis pour voir leur statut en ligne ici !
                   </p>
@@ -422,8 +472,13 @@ const Dashboard = () => {
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Résultats de recherche</h2>
-                    <button onClick={() => setShowSearchResults(false)} className="text-gray-600 hover:text-gray-800">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Résultats de recherche
+                    </h2>
+                    <button
+                      onClick={() => setShowSearchResults(false)}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
                       <FiX className="h-6 w-6" />
                     </button>
                   </div>
@@ -433,7 +488,9 @@ const Dashboard = () => {
                         key={result.id}
                         onClick={() => {
                           if (result.groupId) {
-                            navigate(`/group/${result.groupId}/sondages/${result.id}`);
+                            navigate(
+                              `/group/${result.groupId}/sondages/${result.id}`
+                            );
                           } else {
                             navigate(`/group/${result.name}`);
                           }
@@ -445,7 +502,11 @@ const Dashboard = () => {
                           {result.name || result.question || "Nom indisponible"}
                         </h3>
                         <p className="text-gray-600">
-                          {result.description || result.expiration ? `Expiration : ${convertTimestampToDate(result.expiration)}` : ""}
+                          {result.description || result.expiration
+                            ? `Expiration : ${convertTimestampToDate(
+                                result.expiration
+                              )}`
+                            : ""}
                         </p>
                       </div>
                     ))}

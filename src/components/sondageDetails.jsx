@@ -1,17 +1,11 @@
-import  { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import {
-  doc,
-  onSnapshot,
-  updateDoc,
-  deleteField,
-} from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
 import { db } from "../config/firebase-config";
 import { getAuth } from "firebase/auth";
 import { ArrowLeft } from "react-feather"; // Back icon
+import { useNavigate } from "react-router-dom";
 
-const SondageDetails = () => {
-  const { groupId, pollId } = useParams();
+const SondageDetails = ({ groupId, pollId }) => {
   const navigate = useNavigate();
   const [poll, setPoll] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
@@ -20,45 +14,11 @@ const SondageDetails = () => {
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
-  // useEffect(() => {
-  //   if (!pollId || !userId) return;
-
-  //   const pollRef = doc(db, "groupes", groupId, "sondages", pollId);
-
-  //   // Listen to real-time updates on the poll document
-  //   const unsubscribe = onSnapshot(
-  //     pollRef,
-  //     (docSnap) => {
-  //       if (docSnap.exists()) {
-  //         const pollData = { id: docSnap.id, ...docSnap.data() };
-
-  //         // Update the poll state
-  //         setPoll(pollData);
-
-  //         // Check if the user has already voted by seeing if userId exists in userVotes
-  //         const userVoteIndex = pollData.userVotes?.[userId];
-  //         setHasVoted(userVoteIndex !== undefined);
-
-  //         setError(null);
-  //       } else {
-  //         setError("Ce sondage n'existe pas.");
-  //       }
-  //       setLoading(false);
-  //     },
-  //     () => {
-  //       setError("Erreur de chargement du sondage.");
-  //       setLoading(false);
-  //     }
-  //   );
-
-  //   return () => unsubscribe();
-  // }, [pollId, userId]);
-
   useEffect(() => {
     if (!groupId || !pollId) return;
-  
+
     const pollRef = doc(db, "groups", groupId, "sondages", pollId);
-  
+
     const unsubscribe = onSnapshot(
       pollRef,
       (docSnap) => {
@@ -77,19 +37,13 @@ const SondageDetails = () => {
         setLoading(false);
       }
     );
-  
+
     return () => unsubscribe();
   }, [groupId, pollId, userId]);
-  
-
-  // Just for debugging, to see when hasVoted changes:
-  useEffect(() => {
-    console.log("User has voted:", hasVoted);
-  }, [hasVoted]);
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
+      <div className="flex items-center justify-center h-full">
         <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
         <p className="mt-4 text-gray-600">Chargement du sondage...</p>
       </div>
@@ -98,7 +52,7 @@ const SondageDetails = () => {
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
+      <div className="flex items-center justify-center h-full">
         <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
         <button
           onClick={() => navigate("/sondages")}
@@ -128,7 +82,6 @@ const SondageDetails = () => {
         [`userVotes.${userId}`]: selectedOptionIndex,
       });
 
-      // Optionally, you could set hasVoted here, but it's also handled in the snapshot listener
       setHasVoted(true);
     } catch (error) {
       console.error("Erreur lors du vote :", error);
@@ -140,7 +93,6 @@ const SondageDetails = () => {
     if (!hasVoted || isExpired || !userId) return;
 
     try {
-      // Determine which option the user voted for
       const userVoteIndex = poll.userVotes?.[userId];
       if (userVoteIndex === undefined) return;
 
@@ -155,7 +107,6 @@ const SondageDetails = () => {
         [`userVotes.${userId}`]: deleteField(),
       });
 
-      // The snapshot listener will also catch this and set hasVoted(false).
       setHasVoted(false);
     } catch (error) {
       console.error("Erreur lors du retrait du vote :", error);
@@ -164,16 +115,7 @@ const SondageDetails = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg">
-      <div className="mb-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          <ArrowLeft className="mr-2" /> Retour aux sondages
-        </button>
-      </div>
-
+    <div className="flex flex-col h-full">
       <h2 className="text-3xl font-bold text-gray-800 mb-6">{poll.question}</h2>
 
       {isExpired && (
@@ -182,7 +124,7 @@ const SondageDetails = () => {
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-6 flex-1 overflow-auto">
         {poll.options.map((option, index) => {
           const percentage = totalVotes > 0 ? (poll.votes[index] / totalVotes) * 100 : 0;
 
