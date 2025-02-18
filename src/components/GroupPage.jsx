@@ -189,12 +189,21 @@ const GroupPage = () => {
           {/* Overlay for better contrast */}
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
+<<<<<<< HEAD
           {/* Main Content Box */}
           <div
             className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
             style={{ height: activeTab === "chat" ? "75vh" : "85vh" }}
           >
             {/* Section Header */}
+=======
+        {/* Main Content Box */}
+                  <div
+                    className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
+                    style={{ height: activeTab === "chat" ? "75vh" : "85vh" }}
+                  >
+                    {/* Section Header */}
+>>>>>>> 496f916e9560b5564ae534ab73c9d341a56a7881
             <div className="flex items-center justify-between border-b border-gray-300 pb-4 mb-6">
               <h1 className="text-3xl font-extrabold text-blue-600">{groupName}</h1>
               <span className="px-4 py-2 text-sm font-semibold text-gray-800 bg-gray-200 rounded-full shadow-sm">
