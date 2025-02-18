@@ -192,7 +192,7 @@ const GroupPage = () => {
           {/* Main Content Box */}
           <div
             className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
-            style={{ height: activeTab === "chat" ? "70vh" : "85vh" }}
+            style={{ height: activeTab === "chat" ? "75vh" : "85vh" }}
           >
             {/* Section Header */}
             <div className="flex items-center justify-between border-b border-gray-300 pb-4 mb-6">

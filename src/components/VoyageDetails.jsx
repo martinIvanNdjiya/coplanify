@@ -1,7 +1,6 @@
 import  { useEffect, useRef, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
 import { Chart } from "chart.js/auto";
 import { FiCalendar } from "react-icons/fi";
 import { FaShare } from "react-icons/fa";
@@ -144,12 +143,12 @@ Message: ${shareMessage}`;
             {
               label: "Vol (h)",
               data: dureesVol,
-              backgroundColor: "#3B82F6",
+              backgroundColor: "#72bf6a",
             },
             {
               label: "Escale (h)",
               data: dureesEscale,
-              backgroundColor: "#f97316",
+              backgroundColor: "grey",
             },
           ],
         },
@@ -157,11 +156,11 @@ Message: ${shareMessage}`;
           responsive: true,
           plugins: { legend: { position: "top" } },
           scales: {
-            x: { stacked: true, ticks: { color: "#4B5563" } },
+            x: { stacked: true, ticks: { color: "black" } },
             y: {
               stacked: true,
               ticks: { color: "#4B5563" },
-              title: { display: true, text: "Heures", color: "#374151" },
+              title: { display: true, text: "Heures", color: "black" },
             },
           },
         },
@@ -203,17 +202,19 @@ Message: ${shareMessage}`;
   }
 
   // Centre de la carte (utilise coordsDepart si disponible)
-  const centreCarte = coordsDepart ? [coordsDepart.lat, coordsDepart.lon] : [48.8566, 2.3522];
+  const centreCarte = coordsDepart ? [coordsDepart.lat, coordsDepart.lon] : [49.0083899664, 2.53844117956];
 
- 
+ // Animation general
   const variantsConteneur = {
     hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, when: "beforeChildren", staggerChildren: 0.2 },
+      transition: { duration: 0.6, staggerChildren: 0.2 },
     },
   };
+
+  // Animation de chaque composant
   const variantsItem = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
@@ -227,7 +228,7 @@ Message: ${shareMessage}`;
       animate="visible"
     >
       <div className="max-w-7xl mx-auto">
-        {/* Header: Back & Share buttons */}
+        {/* Share buttons */}
         <motion.div className="flex gap-4 mb-4" variants={variantsItem}>
           <Link
             to="/voyages"
@@ -245,7 +246,7 @@ Message: ${shareMessage}`;
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left column: Itinerary details */}
+          {/* Itineraraire details */}
           <motion.div className="space-y-6" variants={variantsItem}>
             <div className="bg-white rounded-2xl shadow-md p-6">
               <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -298,7 +299,7 @@ Message: ${shareMessage}`;
             </div>
           </motion.div>
 
-          {/* Right column: Leaflet Map */}
+          {/* Leaflet Map */}
           <motion.div className="bg-white rounded-2xl shadow-md p-6 h-[600px]" variants={variantsItem}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">Carte</h2>
             {(!coordsDepart && !coordsArrivee) && (
@@ -310,7 +311,7 @@ Message: ${shareMessage}`;
                 zoom={5}
                 style={{ height: "100%", width: "100%" }}
               >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
                 {coordsDepart && (
                   <Marker position={[coordsDepart.lat, coordsDepart.lon]}>
                     <Popup>{coordsDepart.iata}</Popup>
@@ -326,7 +327,7 @@ Message: ${shareMessage}`;
           </motion.div>
         </div>
 
-        {/* Flight Analysis Chart */}
+        {/* Vol analyse Chart */}
         <motion.div className="bg-white rounded-2xl shadow-md p-6 mt-8" variants={variantsItem}>
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">Analyse du vol</h2>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 text-gray-600">
@@ -352,7 +353,7 @@ Message: ${shareMessage}`;
           <canvas ref={chartRef} className="w-full h-64" />
         </motion.div>
 
-        {/* Modal for sharing in group chat */}
+        {/* Modal group chat */}
         {isModalOpenGroup && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-6 rounded-lg w-96">

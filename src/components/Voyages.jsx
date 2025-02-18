@@ -71,11 +71,8 @@ const FlightResultCard = ({ offer, currency }) => {
   function calculDureeHeures(dureeIso) {
     if (!dureeIso) return 0;
     const duree = dureeIso.replace("PT", "");
-    const heures = duree.match(/(\d+)H/);
-    const minutes = duree.match(/(\d+)M/);
-    const h = heures ? parseInt(heures[1], 10) : 0;
-    const m = minutes ? parseInt(minutes[1], 10) : 0;
-    return h + m / 60;
+
+    return duree
   }
 
   return (

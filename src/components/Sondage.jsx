@@ -215,7 +215,7 @@ const Sondage = ({ groupeId }) => {
         </div>
 
         {isCreating && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-100">
             <div className="bg-white p-6 rounded-xl shadow-xl border border-blue-100 max-w-lg w-full">
               <h2 className="text-2xl font-semibold text-blue-800 mb-4">Nouveau sondage</h2>
               <input
@@ -283,7 +283,7 @@ const Sondage = ({ groupeId }) => {
         )}
 
         {selectedPoll && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-100">
             <div className="bg-white p-6 rounded-xl shadow-xl border border-blue-100 max-w-lg w-full h-full">
               <button
                 onClick={handleClosePoll}
