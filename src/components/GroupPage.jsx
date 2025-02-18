@@ -135,18 +135,16 @@ const GroupPage = () => {
           <nav className="space-y-4">
             <button
               onClick={() => setActiveTab("chat")}
-              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
-                activeTab === "chat" ? "text-blue-500" : "text-gray-700"
-              }`}
+              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${activeTab === "chat" ? "text-blue-500" : "text-gray-700"
+                }`}
             >
               <FiMessageSquare className="mr-3 text-2xl" />
               Chat
             </button>
             <button
               onClick={() => setActiveTab("sondages")}
-              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
-                activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
-              }`}
+              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
+                }`}
             >
               <FiSettings className="mr-3 text-2xl" />
               Sondages
@@ -154,9 +152,8 @@ const GroupPage = () => {
             {createur === userId && (
               <button
                 onClick={() => setActiveTab("parametres")}
-                className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
-                  activeTab === "parametres" ? "text-blue-500" : "text-gray-700"
-                }`}
+                className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${activeTab === "parametres" ? "text-blue-500" : "text-gray-700"
+                  }`}
               >
                 <FiSettings className="mr-3 text-2xl" />
                 Paramètres
@@ -192,12 +189,12 @@ const GroupPage = () => {
           {/* Overlay for better contrast */}
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
-        {/* Main Content Box */}
-                  <div
-                    className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
-                    style={{ height: activeTab === "chat" ? "70vh" : "85vh" }}
-                  >
-                    {/* Section Header */}
+          {/* Main Content Box */}
+          <div
+            className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
+            style={{ height: activeTab === "chat" ? "70vh" : "85vh" }}
+          >
+            {/* Section Header */}
             <div className="flex items-center justify-between border-b border-gray-300 pb-4 mb-6">
               <h1 className="text-3xl font-extrabold text-blue-600">{groupName}</h1>
               <span className="px-4 py-2 text-sm font-semibold text-gray-800 bg-gray-200 rounded-full shadow-sm">
