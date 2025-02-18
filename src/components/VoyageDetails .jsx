@@ -10,12 +10,6 @@ import "leaflet/dist/leaflet.css";
 import { addDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../config/firebase-config";
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-});
 
 const VoyageDetails = () => {
   const location = useLocation();
@@ -104,46 +98,42 @@ Message: ${shareMessage}`;
 
   useEffect(() => {
     if (!offre) return;
-
-    // On part du premier itinéraire
+  
     const itineraires = offre.itineraries || [];
     if (itineraires.length === 0) return;
-
+  
     const segments = itineraires[0].segments || [];
     if (segments.length === 0) return;
-
-    // Premier et dernier segment
-    const premierSegment = segments[0];
-    const dernierSegment = segments[segments.length - 1];
-
-    const iataDepart = premierSegment.departure.iataCode;
-    const iataArrivee = dernierSegment.arrival.iataCode;
-
-    // Fetch coordonnées
+  
+    // Récupération des codes IATA de départ et d'arrivée
+    const iataDepart = segments[0].departure.iataCode;
+    const iataArrivee = segments[segments.length - 1].arrival.iataCode;
+  
+    // Récupération des coordonnées pour les aéroports
     fetchCoordonneesAeroport(iataDepart)
-      .then((data) => {
-        setCoordsDepart({ iata: iataDepart, lat: data.latitude, lon: data.longitude });
-      })
+      .then((data) =>
+        setCoordsDepart({ iata: iataDepart, lat: data.latitude, lon: data.longitude })
+      )
       .catch((err) => console.error("Erreur coords départ:", err));
+  
     fetchCoordonneesAeroport(iataArrivee)
-      .then((data) => {
-        setCoordsArrivee({ iata: iataArrivee, lat: data.latitude, lon: data.longitude });
-      })
+      .then((data) =>
+        setCoordsArrivee({ iata: iataArrivee, lat: data.latitude, lon: data.longitude })
+      )
       .catch((err) => console.error("Erreur coords arrivée:", err));
-
-    // Préparation du chart
+  
+    // Calcul des durées de vol et des escales
     const dureesVol = segments.map((seg) => calculDureeHeures(seg.duration));
-    const dureesEscale = segments.map((seg, idx) => {
-      const segmentActuel = seg;
-      const segmentSuivant = segments[idx + 1];
-      return calculEscale(segmentActuel, segmentSuivant);
-    });
-
+    const dureesEscale = segments.map((seg, idx) =>
+      idx < segments.length - 1 ? calculEscale(seg, segments[idx + 1]) : 0
+    );
+  
     const sommeVol = dureesVol.reduce((acc, val) => acc + val, 0);
     const sommeEscale = dureesEscale.reduce((acc, val) => acc + val, 0);
     setTotalVol(sommeVol);
     setTotalEscale(sommeEscale);
-
+  
+    // Création du graphique si existe
     if (chartRef.current) {
       const ctx = chartRef.current.getContext("2d");
       const monChart = new Chart(ctx, {
@@ -179,8 +169,8 @@ Message: ${shareMessage}`;
       return () => monChart.destroy();
     }
   }, [offre]);
-
-  useEffect(() => {
+  
+   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         const q = query(
