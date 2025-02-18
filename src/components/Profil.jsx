@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { getFirestore, query, collection, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiMessageSquare, FiGrid } from "react-icons/fi";
 import { app } from "../config/firebase-config";
 
 const Profile = () => {
@@ -81,136 +82,198 @@ const Profile = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion :', error);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <Link to="/" className="text-4xl font-extrabold text-blue-500">Coplanify</Link>
-          <div className="flex items-center space-x-8">
-            <ul className="flex space-x-6">
-              <li>
-                <Link to="/dashboard" className="text-lg text-gray-700 hover:text-gray-900">
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link to="/voyages" className="text-lg text-gray-700 hover:text-gray-900">
-                  Voyages
-                </Link>
-              </li>
-              <li>
-                <Link to="/groupes" className="text-lg text-gray-700 hover:text-gray-900">
-                  Groupes
-                </Link>
-              </li>
-              <li>
-                <Link to="/amis" className="text-lg text-gray-700 hover:text-gray-900">
-                  Amis
-                </Link>
-              </li>
-            </ul>
-          </div>
+    <div className="flex h-screen bg-gray-100">
+      {/* Header et Barre latérale intégrés */}
+      <aside className="fixed top-0 left-0 h-full w-64 bg-white flex flex-col">
+        {/* Header combiné */}
+        <header className="bg-white p-6 border-b border-gray-300">
+          <Link to="/" className="text-4xl font-extrabold text-blue-500">
+            Coplanify
+          </Link>
+        </header>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-4">
+          <Link
+            to="/dashboard"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiGrid className="mr-3 text-2xl" />
+            Tableau de bord
+          </Link>
+
+          <Link
+            to="/voyages"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiAirplay className="mr-3 text-2xl" />
+            Voyages
+          </Link>
+          <Link
+            to="/groupes"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiMessageSquare className="mr-3 text-2xl" />
+            Groupes
+          </Link>
+          <Link
+            to="/amis"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiUsers className="mr-3 text-2xl" />
+            Amis
+          </Link>
+          <Link
+            to="/profil"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiUser className="mr-3 text-2xl" />
+            Profil
+          </Link>
+        </nav>
+
+        {/* Bouton de déconnexion */}
+        <div className="px-4 py-6">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center text-lg text-red-600 hover:text-red-700"
+          >
+            <FiLogOut className="mr-3 text-2xl" />
+            Déconnexion
+          </button>
         </div>
-      </nav>
+      </aside>
 
-      {/* Main Profile Section */}
-      <div
-        className="relative min-h-screen flex items-start justify-center py-12 px-4"
-        style={{ backgroundImage: "url('./profil.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
-      >
-        {/* <div className="absolute inset-0 bg-black opacity-50"></div> */}
+      {/* Zone principale */}
+      <div className="flex-1 flex flex-col pl-64">
+        <header className="bg-white p-4 flex items-center justify-between">
+          <div className="relative flex-grow max-w-3xl ml-8"></div>
 
-        <div className="relative z-10 w-full max-w-4xl bg-white/90 shadow-2xl rounded-3xl p-10 backdrop-blur-md mt-12">
-          <h1 className="text-4xl font-extrabold text-center text-blue-500 mb-8">
-            Mon Profil
-          </h1>
+          {/* Espace réservé pour maintenir la hauteur du navbar */}
+          <div className="w-14 h-14"></div>
+        </header>
 
-          {notification && (
-            <div
-              className={`mb-6 p-4 rounded-lg text-white text-center ${
-                notification.type === "success" ? "bg-green-500" : "bg-red-500"
-              }`}
-            >
-              {notification.message}
-            </div>
-          )}
+        {/* Zone centrale */}
+        <div className="relative flex-1 p-6 overflow-y-auto">
+          {/* Image en arrière-plan ajustable */}
+          <div
+            className="absolute top-0 left-0 w-full min-h-full bg-cover bg-center"
+            style={{
+              backgroundImage: "url('./profil.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          ></div>
 
-          {userProfile ? (
-            <div className="flex flex-col lg:flex-row items-center lg:items-start lg:space-x-8">
-              {/* Section Photo de profil */}
-              <div className="flex flex-col items-center space-y-4">
-                <img
-                  src={userProfile.photoProfil || "./defaultProfile.jpg"}
-                  alt="Photo de profil"
-                  className="w-48 h-48 rounded-full shadow-lg object-cover border-4 border-blue-500"
-                />
-                <label className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 cursor-pointer">
-                  Changer la photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+          {/* Superposition pour lisibilité */}
+          <div className="absolute inset-0 z-10"></div>
+          {/* Contenu central */}
+          <div className="relative z-20 flex justify-center items-center">
+            <div className="relative z-10 w-full max-w-4xl bg-white/90 shadow-2xl rounded-3xl p-10 backdrop-blur-md mt-12">
+              <h1 className="text-4xl font-extrabold text-center text-blue-500 mb-8">
+                Mon Profil
+              </h1>
 
-              {/* Section Informations */}
-              <div className="flex-1 mt-8 lg:mt-0">
-                <div className="space-y-6">
-                  {/* Champ Prénom */}
-                  <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-2">
-                      Prénom
-                    </label>
-                    <input
-                      type="text"
-                      value={prenom}
-                      onChange={(e) => setPrenom(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+              {notification && (
+                <div
+                  className={`mb-6 p-4 rounded-lg text-white text-center ${
+                    notification.type === "success"
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                >
+                  {notification.message}
+                </div>
+              )}
+
+              {userProfile ? (
+                <div className="flex flex-col lg:flex-row items-center lg:items-start lg:space-x-8">
+                  {/* Section Photo de profil */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <img
+                      src={userProfile.photoProfil || "./defaultProfile.jpg"}
+                      alt="Photo de profil"
+                      className="w-48 h-48 rounded-full shadow-lg object-cover border-4 border-blue-500"
                     />
+                    <label className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 cursor-pointer">
+                      Changer la photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                  {/* Champ Nom */}
-                  <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-2">
-                      Nom
-                    </label>
-                    <input
-                      type="text"
-                      value={nom}
-                      onChange={(e) => setNom(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  {/* Champ Email */}
-                  <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={userProfile.email}
-                      readOnly
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100"
-                    />
+
+                  {/* Section Informations */}
+                  <div className="flex-1 mt-8 lg:mt-0">
+                    <div className="space-y-6">
+                      {/* Champ Prénom */}
+                      <div>
+                        <label className="block text-lg font-semibold text-gray-700 mb-2">
+                          Prénom
+                        </label>
+                        <input
+                          type="text"
+                          value={prenom}
+                          onChange={(e) => setPrenom(e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      {/* Champ Nom */}
+                      <div>
+                        <label className="block text-lg font-semibold text-gray-700 mb-2">
+                          Nom
+                        </label>
+                        <input
+                          type="text"
+                          value={nom}
+                          onChange={(e) => setNom(e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      {/* Champ Email */}
+                      <div>
+                        <label className="block text-lg font-semibold text-gray-700 mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={userProfile.email}
+                          readOnly
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bouton de mise à jour */}
+                    <div className="mt-8 text-right">
+                      <button
+                        onClick={handleProfileUpdate}
+                        className="px-8 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
+                      >
+                        Mettre à jour
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Bouton de mise à jour */}
-                <div className="mt-8 text-right">
-                  <button
-                    onClick={handleProfileUpdate}
-                    className="px-8 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300"
-                  >
-                    Mettre à jour
-                  </button>
-                </div>
-              </div>
+              ) : (
+                <p className="text-center text-gray-600">Chargement...</p>
+              )}
             </div>
-          ) : (
-            <p className="text-center text-gray-600">Chargement...</p>
-          )}
+          </div>
         </div>
       </div>
     </div>

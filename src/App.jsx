@@ -11,7 +11,7 @@ import Sondage from "./components/Sondage.jsx";
 import SondageDetails from "./components/sondageDetails.jsx";
 import Amis from "./components/Amis.jsx";
 import Groupes from './components/Groupes.jsx';
-import VoyageDetails from './components/VoyageDetails .jsx'
+import VoyageDetails from './components/VoyageDetails.jsx'
 
 function App() {
 
