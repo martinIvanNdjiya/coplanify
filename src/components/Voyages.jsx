@@ -67,22 +67,15 @@ const FlightResultCard = ({ offer, currency }) => {
   /**
    * Convertit une durée ISO (ex: "PT2H30M") en nombre d'heures (ex: 2.5)
    */
+ 
   function calculDureeHeures(dureeIso) {
-    if (!dureeIso) return "00:00";
-
+    if (!dureeIso) return 0;
     const duree = dureeIso.replace("PT", "");
-    const matchHeures = duree.match(/(\d+)H/);
-    const matchMinutes = duree.match(/(\d+)M/);
-
-    // Si la valeur existe, on la parse, sinon 0
-    const heures = matchHeures ? parseInt(matchHeures[1], 10) : 0;
-    const minutes = matchMinutes ? parseInt(matchMinutes[1], 10) : 0;
-
-    // Formate pour avoir au moins 2 chiffres : 02:07, etc.
-    const heuresFormate = String(heures).padStart(2, "0");
-    const minutesFormate = String(minutes).padStart(2, "0");
-
-    return `${heuresFormate}:${minutesFormate}`;
+    const heures = duree.match(/(\d+)H/);
+    const minutes = duree.match(/(\d+)M/);
+    const h = heures ? parseInt(heures[1], 10) : 0;
+    const m = minutes ? parseInt(minutes[1], 10) : 0;
+    return h + m / 60;
   }
 
   return (

@@ -135,18 +135,16 @@ const GroupPage = () => {
           <nav className="space-y-4">
             <button
               onClick={() => setActiveTab("chat")}
-              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
-                activeTab === "chat" ? "text-blue-500" : "text-gray-700"
-              }`}
+              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${activeTab === "chat" ? "text-blue-500" : "text-gray-700"
+                }`}
             >
               <FiMessageSquare className="mr-3 text-2xl" />
               Chat
             </button>
             <button
               onClick={() => setActiveTab("sondages")}
-              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
-                activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
-              }`}
+              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
+                }`}
             >
               <FiSettings className="mr-3 text-2xl" />
               Sondages
@@ -154,9 +152,8 @@ const GroupPage = () => {
             {createur === userId && (
               <button
                 onClick={() => setActiveTab("parametres")}
-                className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
-                  activeTab === "parametres" ? "text-blue-500" : "text-gray-700"
-                }`}
+                className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${activeTab === "parametres" ? "text-blue-500" : "text-gray-700"
+                  }`}
               >
                 <FiSettings className="mr-3 text-2xl" />
                 Paramètres
