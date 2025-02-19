@@ -94,7 +94,7 @@ const Chat = ({ groupeId, userId }) => {
   return (
     <div className="flex flex-col items-center w-full h-screen ">
       {/* Chat Container */}
-      <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md border border-gray-300 rounded-xl shadow-lg overflow-hidden h-[500px] flex flex-col">
+      <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md border border-gray-300 rounded-xl shadow-lg overflow-hidden h-[50%] flex flex-col">
         
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 px-6 text-center border-b border-gray-300">

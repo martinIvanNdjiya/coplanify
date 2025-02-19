@@ -211,7 +211,7 @@ const GroupPage = () => {
 
         {/* Dynamic Content */}
         <div
-          className="relative z-10 p-6 bg-white rounded-2xl shadow-md transition-transform duration-300 overflow-y-auto"
+          className="relative z-10 p-6 bg-white rounded-2xl shadow-md transition-transform duration-300"
           style={{ height: "calc(100% - 6rem)" }}
         >
           {activeTab === "chat" && groupeId && userId && (

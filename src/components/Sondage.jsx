@@ -115,6 +115,14 @@ const Sondage = ({ groupeId }) => {
 
   return (
     <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/votre-image.jpg)' }}>
+      <div className="flex justify-end mt-8">
+          <button
+            onClick={() => setIsCreating(true)}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+          >
+            Créer un sondage
+          </button>
+        </div>
       <div className="max-w-6xl mx-auto px-4 py-8 backdrop-blur-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[45vh] overflow-y-auto">
           {polls.map((poll) => {
@@ -199,20 +207,15 @@ const Sondage = ({ groupeId }) => {
           })}
         </div>
 
+        
+
         {polls.length === 0 && (
           <p className="text-center text-gray-500 mt-8">
             Aucun sondage disponible pour le moment.
           </p>
         )}
 
-        <div className="flex justify-end mt-8">
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
-          >
-            Créer un sondage
-          </button>
-        </div>
+        
 
         {isCreating && (
           <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-100">

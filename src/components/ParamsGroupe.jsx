@@ -267,7 +267,7 @@ const ParamsGroupe = ({ groupeId }) => {
                 )}
             </div>
 
-            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 mt-6 overflow-y-auto" style={{ maxHeight: '85vh' }}>
+            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 mt-6 overflow-y-auto" style={{ maxHeight: '15vh' }}>
                 <h3 className="text-2xl font-semibold mb-4">Participants</h3>
 
                 {participantsData.length > 0 ? (
