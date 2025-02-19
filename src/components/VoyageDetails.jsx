@@ -94,6 +94,28 @@ Message: ${shareMessage}`;
     }
   };
 
+  const handleBook = async () => {
+    try {
+      const user = auth.currentUser;
+      const itinerary = offre.itineraries[0];
+      const firstSegment = itinerary.segments[0];
+      const lastSegment = itinerary.segments[itinerary.segments.length - 1];
+      const reservation = {
+        userId: user.uid,
+        price: offre.price.total,
+        currency: offre.price.currency,
+        departure: firstSegment.departure.iataCode,
+        arrival: lastSegment.arrival.iataCode,
+        duration: itinerary.duration,
+        bookingDate: new Date(),
+      };
+      await addDoc(collection(db, "reservations"), reservation);
+      alert("Réservation effectuée avec succès !");
+    } catch (error) {
+      console.error("Erreur lors de la réservation :", error);
+      alert("Erreur lors de la réservation. Veuillez réessayer.");
+    }
+  };
 
   useEffect(() => {
     if (!offre) return;
@@ -242,6 +264,12 @@ Message: ${shareMessage}`;
           >
             <FaShare className="mr-2" />
             Partager
+          </button>
+          <button
+            onClick={handleBook}
+            className="inline-flex items-center bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-yellow-600 transition-colors"
+          >
+            Réserver
           </button>
         </motion.div>
 

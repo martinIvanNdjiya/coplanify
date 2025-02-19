@@ -213,7 +213,7 @@ const ParamsGroupe = ({ groupeId }) => {
 
     return (
 
-        <div className="max-w-4xl mx-auto mt-8">
+        <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl font-bold text-center text-blue-500 mb-6">
                 Paramètres du Groupe
             </h1>
@@ -225,7 +225,7 @@ const ParamsGroupe = ({ groupeId }) => {
                 </div>
             )}
 
-            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300">
+            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 overflow-y-auto" style={{ maxHeight: '85vh' }}>
                 <h2 className="text-2xl font-semibold mb-4">Modifier le groupe</h2>
 
                 <input
@@ -254,7 +254,7 @@ const ParamsGroupe = ({ groupeId }) => {
                     onClick={handleCopygroupeId}
                     className="w-full py-2 mb-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center justify-center"
                 >
-                    <FiClipboard className="mr-2" /> Copier l'ID du Groupe
+                    <FiClipboard className="mr-2" /> Copier l ID du Groupe
                 </button>
 
                 {auth.currentUser?.uid === groupData?.createur && (
@@ -267,7 +267,7 @@ const ParamsGroupe = ({ groupeId }) => {
                 )}
             </div>
 
-            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 mt-6">
+            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 mt-6 overflow-y-auto" style={{ maxHeight: '85vh' }}>
                 <h3 className="text-2xl font-semibold mb-4">Participants</h3>
 
                 {participantsData.length > 0 ? (

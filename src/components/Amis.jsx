@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   getAuth,
   onAuthStateChanged,
@@ -16,7 +16,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { app } from "../config/firebase-config";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiMessageSquare, FiGrid } from "react-icons/fi";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiMessageSquare, FiGrid, FiCalendar } from "react-icons/fi";
 
 const Amis = () => {
   const auth = getAuth(app);
@@ -187,6 +187,13 @@ const Amis = () => {
             Voyages
           </Link>
           <Link
+            to="/reservations"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiCalendar className="mr-3 text-2xl" />
+            Réservations
+          </Link>
+          <Link
             to="/groupes"
             className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
           >
@@ -248,7 +255,7 @@ const Amis = () => {
 
           {/* Contenu central */}
           <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-16">
-            <h1 className="text-5xl font-extrabold text-blue-500 text-center mb-12 drop-shadow-lg ">
+            <h1 className="text-5xl font-extrabold text-center text-blue-500 mb-6 ">
               Mes Amis
             </h1>
 

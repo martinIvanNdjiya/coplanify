@@ -12,6 +12,7 @@ import SondageDetails from "./components/sondageDetails.jsx";
 import Amis from "./components/Amis.jsx";
 import Groupes from './components/Groupes.jsx';
 import VoyageDetails from './components/VoyageDetails.jsx'
+import Reservations from "./components/Reservations";
 
 function App() {
 
@@ -31,6 +32,7 @@ function App() {
           <Route path="/group/:groupId/sondages/:pollId" element={<SondageDetails />} />
           <Route path="/amis" element={<Amis />} />
           <Route path="/groupes" element={<Groupes />} />
+          <Route path="/reservations" element={<Reservations />} />
         </Routes>
       </Router>
   );

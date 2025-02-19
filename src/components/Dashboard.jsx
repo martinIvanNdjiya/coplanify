@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch, FiMessageSquare, FiX, FiGrid } from "react-icons/fi";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch, FiMessageSquare, FiX, FiGrid, FiCalendar } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, query as firebaseQuery, collection, where, getDocs, onSnapshot, updateDoc, doc } from "firebase/firestore";
@@ -230,6 +230,13 @@ const Dashboard = () => {
           >
             <FiAirplay className="mr-3 text-2xl" />
             Voyages
+          </Link>
+          <Link
+            to="/reservations"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiCalendar className="mr-3 text-2xl" />
+            Réservations
           </Link>
           <Link
             to="/groupes"

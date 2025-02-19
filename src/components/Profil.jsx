@@ -1,9 +1,25 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, query, collection, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  query,
+  collection,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiMessageSquare, FiGrid } from "react-icons/fi";
+import {
+  FiAirplay,
+  FiUsers,
+  FiLogOut,
+  FiUser,
+  FiMessageSquare,
+  FiGrid,
+  FiCalendar,
+} from "react-icons/fi";
 import { app } from "../config/firebase-config";
 
 const Profile = () => {
@@ -21,7 +37,10 @@ const Profile = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const q = query(collection(db, "users"), where("uid", "==", user.uid));
+          const q = query(
+            collection(db, "users"),
+            where("uid", "==", user.uid)
+          );
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             const userData = querySnapshot.docs[0].data();
@@ -30,7 +49,10 @@ const Profile = () => {
             setNom(userData.nom || "");
           }
         } catch (error) {
-          console.error("Erreur lors de la récupération du profil utilisateur :", error);
+          console.error(
+            "Erreur lors de la récupération du profil utilisateur :",
+            error
+          );
         }
       } else {
         navigate("/"); // Redirige vers la page d'accueil si l'utilisateur n'est pas connecté
@@ -43,18 +65,27 @@ const Profile = () => {
   const handleProfileUpdate = async () => {
     try {
       if (auth.currentUser) {
-        const q = query(collection(db, "users"), where("uid", "==", auth.currentUser.uid));
+        const q = query(
+          collection(db, "users"),
+          where("uid", "==", auth.currentUser.uid)
+        );
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
           const userDoc = querySnapshot.docs[0];
           const userRef = doc(db, "users", userDoc.id);
           await updateDoc(userRef, { prenom, nom });
-          setNotification({ type: "success", message: "Profil mis à jour avec succès !" });
+          setNotification({
+            type: "success",
+            message: "Profil mis à jour avec succès !",
+          });
         }
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour du profil :", error);
-      setNotification({ type: "error", message: "Erreur lors de la mise à jour du profil." });
+      setNotification({
+        type: "error",
+        message: "Erreur lors de la mise à jour du profil.",
+      });
     }
   };
 
@@ -62,22 +93,40 @@ const Profile = () => {
     const file = e.target.files[0];
     if (file && auth.currentUser) {
       try {
-        const storageRef = ref(storage, `profilePictures/${auth.currentUser.uid}`);
+        const storageRef = ref(
+          storage,
+          `profilePictures/${auth.currentUser.uid}`
+        );
         await uploadBytes(storageRef, file);
         const photoURL = await getDownloadURL(storageRef);
 
-        const q = query(collection(db, "users"), where("uid", "==", auth.currentUser.uid));
+        const q = query(
+          collection(db, "users"),
+          where("uid", "==", auth.currentUser.uid)
+        );
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
           const userDoc = querySnapshot.docs[0];
           const userRef = doc(db, "users", userDoc.id);
           await updateDoc(userRef, { photoProfil: photoURL });
-          setUserProfile((prevProfile) => ({ ...prevProfile, photoProfil: photoURL }));
-          setNotification({ type: "success", message: "Photo de profil mise à jour avec succès !" });
+          setUserProfile((prevProfile) => ({
+            ...prevProfile,
+            photoProfil: photoURL,
+          }));
+          setNotification({
+            type: "success",
+            message: "Photo de profil mise à jour avec succès !",
+          });
         }
       } catch (error) {
-        console.error("Erreur lors de la mise à jour de la photo de profil :", error);
-        setNotification({ type: "error", message: "Erreur lors de la mise à jour de la photo de profil." });
+        console.error(
+          "Erreur lors de la mise à jour de la photo de profil :",
+          error
+        );
+        setNotification({
+          type: "error",
+          message: "Erreur lors de la mise à jour de la photo de profil.",
+        });
       }
     }
   };
@@ -85,9 +134,9 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      console.error('Erreur lors de la déconnexion :', error);
+      console.error("Erreur lors de la déconnexion :", error);
     }
   };
 
@@ -120,6 +169,13 @@ const Profile = () => {
             Voyages
           </Link>
           <Link
+            to="/reservations"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiCalendar className="mr-3 text-2xl" />
+            Réservations
+          </Link>
+          <Link
             to="/groupes"
             className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
           >
@@ -140,6 +196,7 @@ const Profile = () => {
             <FiUser className="mr-3 text-2xl" />
             Profil
           </Link>
+          
         </nav>
 
         {/* Bouton de déconnexion */}
@@ -181,7 +238,7 @@ const Profile = () => {
           {/* Contenu central */}
           <div className="relative z-20 flex justify-center items-center">
             <div className="relative z-10 w-full max-w-4xl bg-white/90 shadow-2xl rounded-3xl p-10 backdrop-blur-md mt-12">
-              <h1 className="text-4xl font-extrabold text-center text-blue-500 mb-8">
+              <h1 className="text-5xl font-extrabold text-center text-blue-500 mb-6">
                 Mon Profil
               </h1>
 
@@ -281,4 +338,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
