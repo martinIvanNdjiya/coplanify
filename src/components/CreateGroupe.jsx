@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { collection, addDoc, getDocs, query, where, getFirestore, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, updateDoc, getDocs, query, where, getFirestore, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { app } from "../config/firebase-config";
 
 const CreateGroup = ({ onClose }) => {
   const auth = getAuth(app);
   const db = getFirestore(app);
-
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [friends, setFriends] = useState([]);
   const [notification, setNotification] = useState(null);
+  
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -78,6 +78,8 @@ const CreateGroup = ({ onClose }) => {
         createdAt: serverTimestamp(), // Date de création pour le tri
         icon: "default-group-icon.png" // Icône par défaut du groupe
       });
+
+      await updateDoc(newGroupRef, { id: newGroupRef.id });
 
       console.log("Groupe créé avec ID:", newGroupRef.id);
 

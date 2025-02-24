@@ -14,7 +14,7 @@ import { db } from "../config/firebase-config";
 import { getAuth } from "firebase/auth";
 import SondageDetails from "./sondageDetails";
 
-const Sondage = ({ groupeId }) => {
+const Sondage = ({ groupId  }) => {
   const [polls, setPolls] = useState([]);
   const [newPoll, setNewPoll] = useState("");
   const [options, setOptions] = useState([""]);
@@ -22,15 +22,15 @@ const Sondage = ({ groupeId }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState(null);
   const auth = getAuth();
-  console.log("groupeId dans Sondage:", groupeId)
+  console.log("groupId dans Sondage:", groupId)
 
   useEffect(() => {
-    if (!groupeId) {
+    if (!groupId) {
       console.error("Aucun groupe sélectionné !");
       return;
     }
 
-    const pollsRef = collection(db, "groups", groupeId, "sondages");
+    const pollsRef = collection(db, "groups", groupId, "sondages");
     const pollsQuery = query(pollsRef, orderBy("date", "desc"));
 
     const unsubscribe = onSnapshot(pollsQuery, (snapshot) => {
@@ -42,7 +42,7 @@ const Sondage = ({ groupeId }) => {
     });
 
     return () => unsubscribe();
-  }, [groupeId, db]);
+  }, [groupId, db]);
 
   const isPollExpired = (poll) => {
     if (!poll.expiration) return false;
@@ -52,7 +52,7 @@ const Sondage = ({ groupeId }) => {
   };
 
   const handleAddPoll = async () => {
-    if (!groupeId) {
+    if (!groupId) {
       alert("Erreur : aucun groupe sélectionné.");
       return;
     }
@@ -63,7 +63,7 @@ const Sondage = ({ groupeId }) => {
     }
 
     try {
-      const pollsRef = collection(db, "groups", groupeId, "sondages");
+      const pollsRef = collection(db, "groups", groupId, "sondages");
       await addDoc(pollsRef, {
         question: newPoll.trim(),
         options: options.map((opt) => opt.trim()),
@@ -84,7 +84,7 @@ const Sondage = ({ groupeId }) => {
 
   const handleDeletePoll = async (pollId) => {
     try {
-      const pollDocRef = doc(db, "groups", groupeId, "sondages", pollId);
+      const pollDocRef = doc(db, "groups", groupId, "sondages", pollId);
       await deleteDoc(pollDocRef);
     } catch (error) {
       console.error("Erreur lors de la suppression du sondage:", error);
@@ -114,7 +114,16 @@ const Sondage = ({ groupeId }) => {
   };
 
   return (
+    
     <div className="min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/votre-image.jpg)' }}>
+      <div className="flex justify-end mt-1">
+          <button
+            onClick={() => setIsCreating(true)}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
+          >
+            Créer un sondage
+          </button>
+        </div>
       <div className="max-w-6xl mx-auto px-4 py-8 backdrop-blur-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[45vh] overflow-y-auto">
           {polls.map((poll) => {
@@ -199,23 +208,18 @@ const Sondage = ({ groupeId }) => {
           })}
         </div>
 
+        
+
         {polls.length === 0 && (
           <p className="text-center text-gray-500 mt-8">
             Aucun sondage disponible pour le moment.
           </p>
         )}
 
-        <div className="flex justify-end mt-8">
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
-          >
-            Créer un sondage
-          </button>
-        </div>
+        
 
         {isCreating && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-100">
             <div className="bg-white p-6 rounded-xl shadow-xl border border-blue-100 max-w-lg w-full">
               <h2 className="text-2xl font-semibold text-blue-800 mb-4">Nouveau sondage</h2>
               <input
@@ -283,7 +287,7 @@ const Sondage = ({ groupeId }) => {
         )}
 
         {selectedPoll && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-100">
             <div className="bg-white p-6 rounded-xl shadow-xl border border-blue-100 max-w-lg w-full h-full">
               <button
                 onClick={handleClosePoll}
@@ -292,7 +296,7 @@ const Sondage = ({ groupeId }) => {
                 <ArrowLeft className="mr-2" /> Retour aux sondages
               </button>
               <div className="flex-1 overflow-auto">
-                <SondageDetails groupId={groupeId} pollId={selectedPoll.id} />
+                <SondageDetails groupId={groupId} pollId={selectedPoll.id} />
               </div>
             </div>
           </div>

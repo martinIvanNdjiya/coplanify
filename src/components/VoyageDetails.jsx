@@ -1,15 +1,15 @@
 import  { useEffect, useRef, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
 import { Chart } from "chart.js/auto";
 import { FiCalendar } from "react-icons/fi";
 import { FaShare } from "react-icons/fa";
 import { motion } from "framer-motion";
 import "leaflet/dist/leaflet.css";
-import { addDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { addDoc, collection, query, getDocs, where, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../config/firebase-config";
-
+import L from 'leaflet';
+import { useMap, Polyline } from 'react-leaflet';
 
 const VoyageDetails = () => {
   const location = useLocation();
@@ -27,6 +27,8 @@ const VoyageDetails = () => {
   const dureeTotale = totalVol + totalEscale;
 
   const [isModalOpenGroup, setIsModalOpenGroup] = useState(false);
+  const [isModalGroupReservationOpen, setIsModalGroupReservationOpen] = useState(false);
+  
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [shareMessage, setShareMessage] = useState("");
@@ -55,6 +57,7 @@ const VoyageDetails = () => {
     if (diffMs < 0) return 0; 
     return diffMs / (1000 * 60 * 60); 
   }
+
 
   /**
    * Récupère les coordonnées (latitude/longitude) d'un aéroport via l'API
@@ -95,6 +98,65 @@ Message: ${shareMessage}`;
     }
   };
 
+  const handleBook = async () => {
+    try {
+      const user = auth.currentUser;
+      const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+      if (selectedGroup && selectedGroup.createur !== user.uid) {
+        alert("Vous n'êtes pas le créateur de ce groupe, vous ne pouvez pas ajouter une réservation.");
+        return;
+      }
+  
+      const itinerary = offre.itineraries[0];
+      const firstSegment = itinerary.segments[0];
+      const lastSegment = itinerary.segments[itinerary.segments.length - 1];
+  
+      // Vérifier si une réservation existe déjà pour ce groupe
+      const q = query(
+        collection(db, "reservations"),
+        where("groupId", "==", selectedGroupId)
+      );
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        alert("Une réservation existe déjà pour ce groupe.");
+        return;
+      }
+  
+      // Récupérer les noms de villes ou utiliser le code IATA
+      const villeDepart = firstSegment.departure.city || firstSegment.departure.iataCode;
+      const villeArrivee = lastSegment.arrival.city || lastSegment.arrival.iataCode;
+      const destination = `${villeDepart} -> ${villeArrivee}`;
+  
+      const reservation = {
+        groupId: selectedGroupId,
+        userId: user.uid,
+        price: offre.price.total,
+        currency: offre.price.currency,
+        departure: firstSegment.departure.iataCode,
+        arrival: lastSegment.arrival.iataCode,
+        destination, // Exemple : "Paris -> London"
+        duration: itinerary.duration,
+        bookingDate: new Date(),
+        items: [
+          {
+            userId: user.uid,
+            type: "flight",
+            details: offre,
+            status: "pending",
+          },
+        ],
+        status: "pending",
+      };
+  
+      await addDoc(collection(db, "reservations"), reservation);
+      alert("Réservation effectuée avec succès !");
+    } catch (error) {
+      console.error("Erreur lors de la réservation :", error);
+      alert("Erreur lors de la réservation. Veuillez réessayer.");
+    }
+  };
+  
+  
 
   useEffect(() => {
     if (!offre) return;
@@ -144,12 +206,12 @@ Message: ${shareMessage}`;
             {
               label: "Vol (h)",
               data: dureesVol,
-              backgroundColor: "#3B82F6",
+              backgroundColor: "#72bf6a",
             },
             {
               label: "Escale (h)",
               data: dureesEscale,
-              backgroundColor: "#f97316",
+              backgroundColor: "grey",
             },
           ],
         },
@@ -157,11 +219,11 @@ Message: ${shareMessage}`;
           responsive: true,
           plugins: { legend: { position: "top" } },
           scales: {
-            x: { stacked: true, ticks: { color: "#4B5563" } },
+            x: { stacked: true, ticks: { color: "black" } },
             y: {
               stacked: true,
               ticks: { color: "#4B5563" },
-              title: { display: true, text: "Heures", color: "#374151" },
+              title: { display: true, text: "Heures", color: "black" },
             },
           },
         },
@@ -203,22 +265,52 @@ Message: ${shareMessage}`;
   }
 
   // Centre de la carte (utilise coordsDepart si disponible)
-  const centreCarte = coordsDepart ? [coordsDepart.lat, coordsDepart.lon] : [48.8566, 2.3522];
+  const centreCarte = coordsDepart ? [coordsDepart.lat, coordsDepart.lon] : [49.0083899664, 2.53844117956];
 
- 
+ // Animation general
   const variantsConteneur = {
     hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, when: "beforeChildren", staggerChildren: 0.2 },
+      transition: { duration: 0.6, staggerChildren: 0.2 },
     },
   };
+
+  // Animation de chaque composant
   const variantsItem = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
   };
+  // Configuration des icônes personnalisées
+  const createMarkerIcon = (color) => {
+    return new L.Icon({
+      iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  };
 
+  // Composant pour ajuster automatiquement la vue de la carte
+  function MapAdjuster({ coordsDepart, coordsArrivee }) {
+    const map = useMap();
+  
+    useEffect(() => {
+      if (coordsDepart && coordsArrivee) {
+        const bounds = L.latLngBounds(
+          [coordsDepart.lat, coordsDepart.lon],
+          [coordsArrivee.lat, coordsArrivee.lon]
+        );
+        map.flyToBounds(bounds, { padding: [50, 50] });
+      }
+    }, [coordsDepart, coordsArrivee, map]);
+  
+    return null;
+  }
+  
   return (
     <motion.div
       className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-4"
@@ -227,7 +319,7 @@ Message: ${shareMessage}`;
       animate="visible"
     >
       <div className="max-w-7xl mx-auto">
-        {/* Header: Back & Share buttons */}
+        {/* Share buttons */}
         <motion.div className="flex gap-4 mb-4" variants={variantsItem}>
           <Link
             to="/voyages"
@@ -237,15 +329,21 @@ Message: ${shareMessage}`;
           </Link>
           <button
             onClick={() => setIsModalOpenGroup(true)}
-            className="inline-flex items-center bg-green-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-green-600 transition-colors"
+            className="inline-flex items-center bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-yellow-600 transition-colors"
           >
             <FaShare className="mr-2" />
             Partager
           </button>
+          <button
+            onClick={() => setIsModalGroupReservationOpen(true)}
+            className="inline-flex items-center bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-yellow-600 transition-colors"
+          >
+            Réserver
+          </button>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left column: Itinerary details */}
+          {/* Itineraraire details */}
           <motion.div className="space-y-6" variants={variantsItem}>
             <div className="bg-white rounded-2xl shadow-md p-6">
               <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -298,35 +396,68 @@ Message: ${shareMessage}`;
             </div>
           </motion.div>
 
-          {/* Right column: Leaflet Map */}
-          <motion.div className="bg-white rounded-2xl shadow-md p-6 h-[600px]" variants={variantsItem}>
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Carte</h2>
-            {(!coordsDepart && !coordsArrivee) && (
-              <div className="text-center">Chargement de la carte...</div>
-            )}
-            {(coordsDepart || coordsArrivee) && (
-              <MapContainer
-                center={centreCarte}
-                zoom={5}
-                style={{ height: "100%", width: "100%" }}
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
-                {coordsDepart && (
-                  <Marker position={[coordsDepart.lat, coordsDepart.lon]}>
-                    <Popup>{coordsDepart.iata}</Popup>
-                  </Marker>
-                )}
-                {coordsArrivee && (
-                  <Marker position={[coordsArrivee.lat, coordsArrivee.lon]}>
-                    <Popup>{coordsArrivee.iata}</Popup>
-                  </Marker>
-                )}
-              </MapContainer>
-            )}
-          </motion.div>
+          {/* Leaflet Map */}
+          <motion.div className="bg-white rounded-2xl shadow-xl overflow-hidden px-6 pb-20 h-[600px]" variants={variantsItem}>
+  <h2 className="text-2xl font-semibold mb-4 text-gray-800">Carte du trajet</h2>
+  {(!coordsDepart && !coordsArrivee) ? (
+    <div className="h-full flex items-center justify-center bg-gray-50 rounded-xl">
+      <div className="animate-pulse text-gray-500">Chargement de la carte...</div>
+    </div>
+  ) : (
+    <MapContainer
+      center={centreCarte}
+      zoom={4}
+      style={{ height: "100%", width: "100%", borderRadius: "1rem" }}
+      className="z-0"
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+        attribution='&copy; OpenStreetMap France | <a href="https://www.openstreetmap.org/copyright">© contributeurs OpenStreetMap</a>'
+        maxZoom={19}
+      />
+      
+      {coordsDepart && (
+        <Marker 
+          position={[coordsDepart.lat, coordsDepart.lon]} 
+          icon={createMarkerIcon('blue')}
+        >
+          <Popup className="font-semibold">
+            🛫 Départ: {coordsDepart.iata}
+          </Popup>
+        </Marker>
+      )}
+      
+      {coordsArrivee && (
+        <Marker 
+          position={[coordsArrivee.lat, coordsArrivee.lon]} 
+          icon={createMarkerIcon('red')}
+        >
+          <Popup className="font-semibold">
+            🛬 Arrivée: {coordsArrivee.iata}
+          </Popup>
+        </Marker>
+      )}
+
+      {coordsDepart && coordsArrivee && (
+        <>
+          <MapAdjuster coordsDepart={coordsDepart} coordsArrivee={coordsArrivee} />
+          <Polyline
+            positions={[
+              [coordsDepart.lat, coordsDepart.lon],
+              [coordsArrivee.lat, coordsArrivee.lon]
+            ]}
+            color="#3b82f6"
+            weight={3}
+            dashArray="5, 5"
+          />
+        </>
+      )}
+    </MapContainer>
+  )}
+</motion.div>
         </div>
 
-        {/* Flight Analysis Chart */}
+        {/* Vol analyse Chart */}
         <motion.div className="bg-white rounded-2xl shadow-md p-6 mt-8" variants={variantsItem}>
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">Analyse du vol</h2>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4 text-gray-600">
@@ -352,9 +483,9 @@ Message: ${shareMessage}`;
           <canvas ref={chartRef} className="w-full h-64" />
         </motion.div>
 
-        {/* Modal for sharing in group chat */}
+        {/* Modal group chat */}
         {isModalOpenGroup && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
             <div className="bg-white p-6 rounded-lg w-96">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">Partager l'itinéraire</h3>
@@ -390,6 +521,46 @@ Message: ${shareMessage}`;
             </div>
           </div>
         )}
+         {/* Modal group selection */}
+         {isModalGroupReservationOpen && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+    <div className="bg-white p-6 rounded-lg w-96">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold">Sélectionnez un groupe</h3>
+        <button
+          onClick={() => setIsModalGroupReservationOpen(false)}
+          className="text-red-500 text-2xl"
+        >
+          &times;
+        </button>
+      </div>
+      <label className="block mb-2">Groupe :</label>
+      <select
+        className="w-full p-2 border rounded-lg mb-4"
+        value={selectedGroupId}
+        onChange={(e) => setSelectedGroupId(e.target.value)}
+      >
+        {groups.map((g) => (
+          <option key={g.id} value={g.id}>
+            {g.name} - {g.description}
+          </option>
+        ))}
+      </select>
+      <div className="flex gap-4">
+        <button
+          onClick={() => {
+            setIsModalGroupReservationOpen(false);
+            handleBook();
+          }}
+          className="w-full bg-green-500 text-white py-2 rounded-lg"
+        >
+          Réserver
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
     </motion.div>
   );

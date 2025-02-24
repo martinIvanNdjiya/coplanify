@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, deleteField, addDoc, collection } from "firebase/firestore";
 import { db } from "../config/firebase-config";
 import { getAuth } from "firebase/auth";
 import { ArrowLeft } from "react-feather"; // Back icon
@@ -19,6 +19,23 @@ const SondageDetails = ({ groupId, pollId }) => {
 
     const pollRef = doc(db, "groups", groupId, "sondages", pollId);
 
+    const checkPollExpiration = async (pollData) => {
+      console.log("Checking poll expiration... ", pollData);
+      
+      if (pollData.expiration && new Date() > pollData.expiration.toDate()) {
+        const winningOptionIndex = pollData.votes.indexOf(Math.max(...pollData.votes));
+        const winningOption = pollData.options[winningOptionIndex];
+        const message = `Le sondage "${pollData.question}" est clôturé. L'option gagnante est "${winningOption}".`;
+
+        const messagesRef = collection(db, `groups/${groupId}/messages`);
+        await addDoc(messagesRef, {
+          idUtilisateur: pollData.creator,
+          message,
+          date: new Date(),
+        });
+      }
+    };
+
     const unsubscribe = onSnapshot(
       pollRef,
       (docSnap) => {
@@ -27,6 +44,7 @@ const SondageDetails = ({ groupId, pollId }) => {
           setPoll(pollData);
           setHasVoted(pollData.userVotes?.[userId] !== undefined);
           setError(null);
+          checkPollExpiration(pollData);
         } else {
           setError("Ce sondage n'existe pas.");
         }

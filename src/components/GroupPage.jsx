@@ -1,49 +1,63 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-  arrayRemove,
-} from "firebase/firestore";
+import { getDoc, doc, updateDoc, arrayRemove } from "firebase/firestore";
 import { db } from "../config/firebase-config";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Chat from "./Chat";
 import Sondage from "./Sondage";
 import ParamsGroupe from "./ParamsGroupe";
-import { FiMessageSquare, FiSettings, FiLogOut } from "react-icons/fi";
+import GroupReservations from "./GroupReservations";
+import {
+  FiMessageSquare,
+  FiSettings,
+  FiLogOut,
+  FiBarChart2,
+  FiCalendar,
+} from "react-icons/fi";
 
 const GroupPage = () => {
-  const { groupName } = useParams();
-  const [groupeId, setGroupeId] = useState(null);
-  const [createur, setCreateur] = useState(null);
-  const [participants, setParticipants] = useState([]);
+  const { groupId } = useParams();
+  const [groupData, setGroupData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("chat");
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
   const auth = getAuth();
-  const userId = auth.currentUser?.uid;
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialisation de l'onglet actif en fonction du paramètre "tab" de l'URL
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  // Met à jour l'URL lorsque activeTab change
+  useEffect(() => {
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
 
   useEffect(() => {
-    if (!userId) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  useEffect(() => {
+    if (!currentUser) return; // Attendre que l'utilisateur soit disponible
+
     const fetchGroupData = async () => {
       try {
-        const groupsRef = collection(db, "groups");
-        const q = query(groupsRef, where("name", "==", groupName));
-        const querySnapshot = await getDocs(q);
+        const groupRef = doc(db, "groups", groupId);
+        const groupSnap = await getDoc(groupRef);
 
-        if (!querySnapshot.empty) {
-          const groupDoc = querySnapshot.docs[0];
-          const groupData = groupDoc.data();
+        if (groupSnap.exists()) {
+          const data = groupSnap.data();
+          setGroupData(data);
 
-          setGroupeId(groupDoc.id);
-          setCreateur(groupData.createur);
-          setParticipants(groupData.participants);
-
-          if (!groupData.participants.includes(userId)) {
+          if (!data.participants.includes(currentUser.uid)) {
             console.error("Vous n'êtes pas membre de ce groupe !");
             navigate("/dashboard");
           }
@@ -60,15 +74,15 @@ const GroupPage = () => {
     };
 
     fetchGroupData();
-  }, [groupName, navigate, userId]);
+  }, [currentUser, groupId, navigate]);
 
   const handleLeaveGroup = async () => {
     const confirmLeave = window.confirm("Êtes-vous sûr de vouloir quitter ce groupe ?");
-    if (confirmLeave) {
+    if (confirmLeave && currentUser) {
       try {
-        const groupRef = doc(db, "groups", groupeId);
+        const groupRef = doc(db, "groups", groupId);
         await updateDoc(groupRef, {
-          participants: arrayRemove(userId),
+          participants: arrayRemove(currentUser.uid),
         });
         navigate("/dashboard");
       } catch (error) {
@@ -85,10 +99,12 @@ const GroupPage = () => {
     );
   }
 
-  if (!groupeId || !userId) {
+  if (!groupData || !currentUser) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500 text-lg font-semibold">Erreur : groupe non trouvé ou utilisateur non connecté.</p>
+        <p className="text-red-500 text-lg font-semibold">
+          Erreur : groupe non trouvé ou utilisateur non connecté.
+        </p>
       </div>
     );
   }
@@ -148,10 +164,19 @@ const GroupPage = () => {
                 activeTab === "sondages" ? "text-blue-500" : "text-gray-700"
               }`}
             >
-              <FiSettings className="mr-3 text-2xl" />
+              <FiBarChart2 className="mr-3 text-2xl" />
               Sondages
             </button>
-            {createur === userId && (
+            <button
+              onClick={() => setActiveTab("reservations")}
+              className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
+                activeTab === "reservations" ? "text-blue-500" : "text-gray-700"
+              }`}
+            >
+              <FiCalendar className="mr-3 text-2xl" />
+              Réservations
+            </button>
+            {groupData.createur === currentUser.uid && (
               <button
                 onClick={() => setActiveTab("parametres")}
                 className={`flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 ${
@@ -162,7 +187,8 @@ const GroupPage = () => {
                 Paramètres
               </button>
             )}
-            {createur !== userId && (
+
+            {groupData.createur !== currentUser.uid && (
               <button
                 onClick={handleLeaveGroup}
                 className="flex items-center text-lg font-medium px-3 py-2 rounded-lg transition duration-300 text-red-500"
@@ -176,14 +202,16 @@ const GroupPage = () => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-start relative h-full overflow-hidden">
-          {/* Background Image - Full Page */}
+          {/* Background Image */}
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
                 activeTab === "chat"
                   ? "url('/chat1.jpg')"
-                  : "url('/sondage1.jpg')",
+                  : activeTab === "sondages"
+                  ? "url('/sondage1.jpg')"
+                  : "url('/reservations.jpg')",
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
@@ -192,29 +220,41 @@ const GroupPage = () => {
           {/* Overlay for better contrast */}
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
-        {/* Main Content Box */}
-                  <div
-                    className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
-                    style={{ height: activeTab === "chat" ? "70vh" : "85vh" }}
-                  >
-                    {/* Section Header */}
+          {/* Main Content Box */}
+          <div
+            className="relative z-10 w-full max-w-4xl bg-white shadow-2xl rounded-3xl p-8 border border-gray-200 mt-12"
+            style={{ height: activeTab === "parametres" ? "85vh" : "75vh" }}
+          >
+            {/* Section Header */}
             <div className="flex items-center justify-between border-b border-gray-300 pb-4 mb-6">
-              <h1 className="text-3xl font-extrabold text-blue-600">{groupName}</h1>
+              <h1 className="text-3xl font-extrabold text-blue-600">
+                {groupData.name}
+              </h1>
               <span className="px-4 py-2 text-sm font-semibold text-gray-800 bg-gray-200 rounded-full shadow-sm">
-                {activeTab === "chat" ? "💬 Chat Actif" : activeTab === "sondages" ? "📊 Sondages" : "⚙️ Paramètres"}
+                {activeTab === "chat"
+                  ? "💬 Chat Actif"
+                  : activeTab === "sondages"
+                  ? "📊 Sondages"
+                  : activeTab === "parametres"
+                  ? "⚙️ Paramètres"
+                  : activeTab === "reservations"
+                  ? "📅 Réservations"
+                  : "⚙️ Paramètres"}
               </span>
             </div>
 
             {/* Dynamic Content */}
-            <div className="relative z-10 p-6 bg-white rounded-2xl shadow-md transition-transform duration-300" style={{ height: "calc(100% - 6rem)" }}>
-              {activeTab === "chat" && groupeId && userId && (
-                <Chat groupeId={groupeId} userId={userId} />
+            <div
+              className="relative z-10 p-6 bg-white rounded-2xl shadow-md transition-transform duration-300"
+              style={{ height: "calc(100% - 6rem)" }}
+            >
+              {activeTab === "chat" && groupId && currentUser && (
+                <Chat groupId={groupId} userId={currentUser.uid} />
               )}
-              {activeTab === "sondages" && groupeId && (
-                <Sondage groupeId={groupeId} />
-              )}
-              {activeTab === "parametres" && groupeId && (
-                <ParamsGroupe groupeId={groupeId} />
+              {activeTab === "sondages" && <Sondage groupId={groupId} />}
+              {activeTab === "parametres" && <ParamsGroupe groupId={groupId} />}
+              {activeTab === "reservations" && (
+                <GroupReservations groupId={groupId} userId={currentUser.uid} />
               )}
             </div>
           </div>

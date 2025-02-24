@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch, FiMessageSquare, FiX, FiGrid } from "react-icons/fi";
+import { FiAirplay, FiUsers, FiLogOut, FiUser, FiSearch, FiMessageSquare, FiX, FiGrid, FiCalendar } from "react-icons/fi";
 import { useEffect, useState } from "react";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, query as firebaseQuery, collection, where, getDocs, onSnapshot, updateDoc, doc } from "firebase/firestore";
@@ -232,6 +232,13 @@ const Dashboard = () => {
             Voyages
           </Link>
           <Link
+            to="/reservations"
+            className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
+          >
+            <FiCalendar className="mr-3 text-2xl" />
+            Réservations
+          </Link>
+          <Link
             to="/groupes"
             className="flex items-center text-lg font-medium text-gray-700 hover:text-blue-500 transition duration-300"
           >
@@ -313,11 +320,9 @@ const Dashboard = () => {
                       key={result.id}
                       onClick={() => {
                         if (result.groupId) {
-                          navigate(
-                            `/group/${result.groupId}/sondages/${result.id}`
-                          );
+                          navigate(`/group/${result.groupId}?tab=sondages`)
                         } else {
-                          navigate(`/group/${result.name}`);
+                          navigate(`/group/${result.groupId}`);
                         }
                         setShowSearchResults(false);
                       }}
@@ -364,12 +369,12 @@ const Dashboard = () => {
                   Voyages en cours
                 </h2>
 
-                <button
+                {/* <button
                   onClick={() => setShowCreateGroupModal(true)}
                   className="px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
                 >
                   Créer un groupe
-                </button>
+                </button> */}
 
                 {showCreateGroupModal && (
                   <CreateGroup onClose={() => setShowCreateGroupModal(false)} />
@@ -380,7 +385,7 @@ const Dashboard = () => {
                 {groups.map((group) => (
                   <div
                     key={group.id}
-                    onClick={() => navigate(`/group/${group.name}`)} // Navigate to the group page
+                    onClick={() => navigate(`/group/${group.id}`)} // Navigate to the group page
                     className="bg-white bg-opacity-90 rounded-xl p-6 transition-all hover:scale-105 hover:shadow-2xl border border-gray-200"
                   >
                     <h3 className="text-2xl font-bold text-black mb-4">
@@ -405,9 +410,7 @@ const Dashboard = () => {
                   <div
                     key={sondage.id}
                     onClick={() =>
-                      navigate(
-                        `/group/${sondage.groupId}/sondages/${sondage.id}`
-                      )
+                      navigate(`/group/${sondage.groupId}?tab=sondages`)
                     } // Navigate to the sondage page
                     className="bg-white bg-opacity-90 rounded-xl p-6 transition-all hover:scale-105 hover:shadow-2xl border border-gray-200"
                   >
@@ -492,7 +495,7 @@ const Dashboard = () => {
                               `/group/${result.groupId}/sondages/${result.id}`
                             );
                           } else {
-                            navigate(`/group/${result.name}`);
+                            navigate(`/group/${result.groupId}`);
                           }
                           setShowSearchResults(false);
                         }}
