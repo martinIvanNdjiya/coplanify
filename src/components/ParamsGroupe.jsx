@@ -18,7 +18,7 @@ import { app } from "../config/firebase-config";
 import { FiTrash, FiClipboard } from "react-icons/fi";
 import PropTypes from "prop-types";
 
-const ParamsGroupe = ({ groupeId }) => {
+const ParamsGroupe = ({ groupId }) => {
     const auth = getAuth(app);
     const db = getFirestore(app);
     const currentUserUid = auth.currentUser ? auth.currentUser.uid : null;
@@ -31,9 +31,9 @@ const ParamsGroupe = ({ groupeId }) => {
     const [friendsList, setFriendsList] = useState([]);
     const navigate = useNavigate();
     useEffect(() => {
-        if (!groupeId) return;
+        if (!groupId) return;
 
-        const unsubscribe = onSnapshot(doc(db, "groups", groupeId), async (docSnap) => {
+        const unsubscribe = onSnapshot(doc(db, "groups", groupId), async (docSnap) => {
             if (docSnap.exists()) {
                 const groupInfo = docSnap.data();
                 setGroupData(groupInfo);
@@ -51,7 +51,7 @@ const ParamsGroupe = ({ groupeId }) => {
         });
 
         return () => unsubscribe();
-    }, [groupeId, db]);
+    }, [groupId, db]);
 
 
 
@@ -126,7 +126,7 @@ const ParamsGroupe = ({ groupeId }) => {
         }
 
         try {
-            await updateDoc(doc(db, "groups", groupeId), {
+            await updateDoc(doc(db, "groups", groupId), {
                 name: newName,
                 description: newDescription
             });
@@ -147,7 +147,7 @@ const ParamsGroupe = ({ groupeId }) => {
         }
 
         try {
-            await updateDoc(doc(db, "groups", groupeId), {
+            await updateDoc(doc(db, "groups", groupId), {
                 participants: arrayUnion(newParticipant)
             });
 
@@ -168,7 +168,7 @@ const ParamsGroupe = ({ groupeId }) => {
         }
 
         try {
-            await updateDoc(doc(db, "groups", groupeId), {
+            await updateDoc(doc(db, "groups", groupId), {
                 participants: arrayRemove(uid)
             });
 
@@ -189,7 +189,7 @@ const ParamsGroupe = ({ groupeId }) => {
         if (!confirmDelete) return;
 
         try {
-            await deleteDoc(doc(db, "groups", groupeId));
+            await deleteDoc(doc(db, "groups", groupId));
             navigate("/");
             setNotification({ type: "success", message: "Groupe supprimé avec succès !" });
         } catch (error) {
@@ -198,13 +198,13 @@ const ParamsGroupe = ({ groupeId }) => {
         }
     };
 
-    const handleCopygroupeId = () => {
-        if (!groupeId) {
+    const handleCopygroupId = () => {
+        if (!groupId) {
             setNotification({ type: "error", message: "ID du groupe introuvable !" });
             return;
         }
 
-        navigator.clipboard.writeText(groupeId);
+        navigator.clipboard.writeText(groupId);
         setNotification({ type: "success", message: `ID du groupe copié !` });
 
         // Reset apres 2 seconds
@@ -219,40 +219,40 @@ const ParamsGroupe = ({ groupeId }) => {
             </h1>
 
             {notification && (
-                <div className={`mb-4 p-3 rounded text-white text-center ${notification.type === "success" ? "bg-green-500" : "bg-red-500"
+                <div className={`mb-2 p-3 rounded text-white text-center ${notification.type === "success" ? "bg-green-500" : "bg-red-500"
                     }`}>
                     {notification.message}
                 </div>
             )}
 
-            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 overflow-y-auto" style={{ maxHeight: '85vh' }}>
-                <h2 className="text-2xl font-semibold mb-4">Modifier le groupe</h2>
+            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300" style={{ maxHeight: '85vh' }}>
+                <h2 className="text-2xl font-semibold mb-2">Modifier le groupe</h2>
 
                 <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 mb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nom du groupe"
                 />
 
                 <textarea
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
-                    className="w-full p-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 mb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Description du groupe"
                 />
 
                 <button
                     onClick={handleSaveChanges}
-                    className="w-full py-2 mb-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                    className="w-full py-2 mb-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
                     Enregistrer les modifications
                 </button>
 
                 <button
-                    onClick={handleCopygroupeId}
-                    className="w-full py-2 mb-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center justify-center"
+                    onClick={handleCopygroupId}
+                    className="w-full py-2 mb-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center justify-center"
                 >
                     <FiClipboard className="mr-2" /> Copier l ID du Groupe
                 </button>
@@ -260,18 +260,18 @@ const ParamsGroupe = ({ groupeId }) => {
                 {auth.currentUser?.uid === groupData?.createur && (
                     <button
                         onClick={handleDeleteGroup}
-                        className="w-full py-2 mb-4 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center justify-center"
+                        className="w-full py-2 mb-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center justify-center"
                     >
                         <FiTrash className="mr-2" /> Supprimer le groupe
                     </button>
                 )}
             </div>
 
-            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 mt-6 overflow-y-auto" style={{ maxHeight: '15vh' }}>
-                <h3 className="text-2xl font-semibold mb-4">Participants</h3>
+            <div className="bg-white p-6 shadow-md rounded-lg border border-gray-300 mt-6 overflow-y-auto h-[30vh] " style={{ maxHeight: '15vh' }}>
+                <h3 className="text-2xl font-semibold mb-2">Participants</h3>
 
                 {participantsData.length > 0 ? (
-                    <ul className="mb-4 border p-3 rounded-lg bg-gray-100 max-h-32 overflow-auto">
+                    <ul className="mb-2 border p-3 rounded-lg bg-gray-100 overflow-auto">
                         {participantsData.map((participant) => (
                             <li key={participant.uid} className="flex justify-between items-center py-1">
                                 <span className="text-gray-700">
@@ -322,7 +322,7 @@ const ParamsGroupe = ({ groupeId }) => {
 
 
 ParamsGroupe.propTypes = {
-    groupeId: PropTypes.string.isRequired,
+    groupId: PropTypes.string.isRequired,
 }
 
 export default ParamsGroupe;

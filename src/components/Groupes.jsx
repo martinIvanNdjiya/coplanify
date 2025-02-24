@@ -216,7 +216,7 @@ const Groupes = () => {
                   groups.map((group) => (
                     <div
                       key={group.id}
-                      onClick={() => navigate(`/group/${group.name}`)}
+                      onClick={() => navigate(`/group/${group.id}`)}
                       className="bg-white bg-opacity-90 rounded-xl p-6 shadow-md hover:shadow-xl cursor-pointer transition-all duration-300 transform hover:scale-105 border border-gray-200"
                     >
                       <h3 className="text-2xl font-bold text-gray-800 mb-2">

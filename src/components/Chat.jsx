@@ -11,25 +11,36 @@ import {
   onSnapshot,
   where,
   getDocs,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { useParams } from "react-router-dom";
 import { db } from "../config/firebase-config";
-import { FiSend } from "react-icons/fi";
+import { FiSend, FiEdit, FiTrash, FiCheck, FiX } from "react-icons/fi";
 
-const Chat = ({ groupeId, userId }) => {
+const Chat = (props) => {
   const [messages, setMessages] = useState([]);
   const [usersData, setUsersData] = useState({});
   const [newMessage, setNewMessage] = useState("");
   const [groupeData, setGroupeData] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+
+  const { groupId: groupIdFromParams } = useParams();
+  const groupId = props.groupId || groupIdFromParams;
+  const auth = getAuth();
+  const userId = props.userId || auth.currentUser?.uid;
 
   useEffect(() => {
-    if (!groupeId) {
+    if (!groupId) {
       console.error("Invalid group ID provided!");
       return;
     }
 
     const fetchGroupData = async () => {
       try {
-        const docRef = doc(db, "groups", groupeId);
+        const docRef = doc(db, "groups", groupId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -43,13 +54,13 @@ const Chat = ({ groupeId, userId }) => {
     };
 
     fetchGroupData();
-  }, [groupeId]);
+  }, [groupId]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !groupeId || !userId) return;
+    if (!newMessage.trim() || !groupId || !userId) return;
 
     try {
-      const messagesRef = collection(db, `groups/${groupeId}/messages`);
+      const messagesRef = collection(db, `groups/${groupId}/messages`);
       await addDoc(messagesRef, {
         idUtilisateur: userId,
         message: newMessage.trim(),
@@ -61,10 +72,47 @@ const Chat = ({ groupeId, userId }) => {
     }
   };
 
-  useEffect(() => {
-    if (!groupeId) return;
+  // Delete message
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      const messageRef = doc(db, `groups/${groupId}/messages`, messageId);
+      await deleteDoc(messageRef);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
 
-    const messagesRef = collection(db, `groups/${groupeId}/messages`);
+  // Edit message
+  const handleStartEdit = (message) => {
+    setEditingMessageId(message.id);
+    setEditingText(message.message);
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
+  };
+
+  const handleUpdateMessage = async () => {
+    if (!editingText.trim()) return;
+    try {
+      const messageRef = doc(db, `groups/${groupId}/messages`, editingMessageId);
+      await updateDoc(messageRef, {
+        message: editingText.trim(),
+        date: serverTimestamp(),
+      });
+      setEditingMessageId(null);
+      setEditingText("");
+    } catch (error) {
+      console.error("Error updating message:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!groupId) return;
+
+    const messagesRef = collection(db, `groups/${groupId}/messages`);
     const messagesQuery = query(messagesRef, orderBy("date", "asc"));
 
     const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
@@ -74,8 +122,9 @@ const Chat = ({ groupeId, userId }) => {
       }));
       setMessages(messagesArray);
 
-      // Récupérer les données des utilisateurs
-      const uniqueUserIds = [...new Set(messagesArray.map((msg) => msg.idUtilisateur))];
+      const uniqueUserIds = [
+        ...new Set(messagesArray.map((msg) => msg.idUtilisateur)),
+      ];
       const usersInfo = {};
 
       for (const uid of uniqueUserIds) {
@@ -89,56 +138,123 @@ const Chat = ({ groupeId, userId }) => {
     });
 
     return () => unsubscribe();
-  }, [groupeId]);
+  }, [groupId]);
 
   return (
     <div className="flex flex-col items-center w-full h-screen ">
       {/* Chat Container */}
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md border border-gray-300 rounded-xl shadow-lg overflow-hidden h-[50%] flex flex-col">
-        
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 px-6 text-center border-b border-gray-300">
-          <h2 className="text-lg font-semibold">{groupeData?.name || "Chargement du groupe..."}</h2>
+          <h2 className="text-lg font-semibold">
+            {groupeData?.name || "Chargement du groupe..."}
+          </h2>
         </div>
 
-        {/* Messages avec scroll */}
+        {/* Messages with scroll */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
           {messages.length ? (
             messages.map((message) => {
               const sender = usersData[message.idUtilisateur] || {};
+              const isCurrentUser = message.idUtilisateur === userId;
               return (
-                <div key={message.id} className={`flex items-start space-x-3 ${message.idUtilisateur === userId ? "justify-end" : "justify-start"}`}>
-                  {message.idUtilisateur !== userId ? (
+                <div
+                  key={message.id}
+                  className={`flex items-start space-x-3 ${
+                    isCurrentUser ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  { !isCurrentUser && (
                     <img
                       src={sender.photoProfil || "./user.jpg"}
                       alt="Profile"
                       className="w-10 h-10 rounded-full border-2 border-blue-500"
                     />
-                  ) : (
+                  )}
+                  <div className="flex flex-col">
+                    { !isCurrentUser ? (
+                      <p className="text-sm font-semibold text-gray-700">
+                        {sender.prenom} {sender.nom}
+                      </p>
+                    ) : (
+                      <p className="text-sm font-semibold text-gray-700">
+                        {usersData[userId]?.prenom} {usersData[userId]?.nom}
+                      </p>
+                    )}
+                    <div
+                      className={`p-3 rounded-xl max-w-[100%] shadow-md ${
+                        isCurrentUser ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-900"
+                      }`}
+                    >
+                      {editingMessageId === message.id ? (
+                        <div className="flex flex-col">
+                          <input
+                            type="text"
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="w-full p-2 rounded border border-gray-400 text-black"
+                          />
+                          <div className="flex justify-end space-x-2 mt-2">
+                            <button
+                              onClick={handleUpdateMessage}
+                              className="text-green-500 hover:text-green-700"
+                              title="Save"
+                            >
+                              <FiCheck />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="text-red-500 hover:text-red-700"
+                              title="Cancel"
+                            >
+                              <FiX />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm">{message.message}</p>
+                          {isCurrentUser && (
+                            <div className="flex space-x-2 ml-4">
+                              <button
+                                onClick={() => handleStartEdit(message)}
+                                className="text-yellow-500 hover:text-yellow-600"
+                                title="Edit"
+                              >
+                                <FiEdit />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="text-red-500 hover:text-red-600"
+                                title="Delete"
+                              >
+                                <FiTrash />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <span className="text-xs opacity-70 block text-right">
+                        {message.date
+                          ? new Date(message.date.toDate()).toLocaleTimeString()
+                          : "Chargement..."}
+                      </span>
+                    </div>
+                  </div>
+                  { isCurrentUser && (
                     <img
                       src={usersData[userId]?.photoProfil || "./user.jpg"}
                       alt="Profile"
                       className="w-10 h-10 rounded-full border-2 border-blue-500"
                     />
                   )}
-                  <div className="flex flex-col">
-                    {message.idUtilisateur !== userId ? (
-                      <p className="text-sm font-semibold text-gray-700">{sender.prenom} {sender.nom}</p>
-                    ) : (
-                      <p className="text-sm font-semibold text-gray-700">{usersData[userId]?.prenom} {usersData[userId]?.nom}</p>
-                    )}
-                    <div className={`p-3 rounded-xl max-w-[100%] shadow-md ${message.idUtilisateur === userId ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-900"}`}>
-                      <p className="text-sm">{message.message}</p>
-                      <span className="text-xs opacity-70">
-                        {message.date ? new Date(message.date.toDate()).toLocaleTimeString() : "Chargement..."}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               );
             })
           ) : (
-            <div className="text-center text-gray-600 text-sm py-4">Aucun message...</div>
+            <div className="text-center text-gray-600 text-sm py-4">
+              Aucun message...
+            </div>
           )}
         </div>
 
@@ -165,7 +281,7 @@ const Chat = ({ groupeId, userId }) => {
 };
 
 Chat.propTypes = {
-  groupeId: PropTypes.string.isRequired,
+  groupId: PropTypes.string.isRequired,
   userId: PropTypes.string.isRequired,
 };
 

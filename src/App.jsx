@@ -13,7 +13,7 @@ import Amis from "./components/Amis.jsx";
 import Groupes from './components/Groupes.jsx';
 import VoyageDetails from './components/VoyageDetails.jsx'
 import Reservations from "./components/Reservations";
-
+import ChatWrapper from './components/ChatWrapper';
 function App() {
 
   return (
@@ -26,8 +26,8 @@ function App() {
           <Route path="/profil" element={<Profile />} />
           <Route path="/voyages" element={<Voyages />} />
           <Route path="/voyage/:id" element={<VoyageDetails />} />
-          <Route path="/group/:groupeId/chat" element={<Chat />} />
-          <Route path="/group/:groupName" element={<GroupPage />} />
+          <Route path="/group/:groupId/chat" element={<ChatWrapper />} />
+          <Route path="/group/:groupId" element={<GroupPage />} />
           <Route path="/group/:groupId/sondages" element={<Sondage />} />
           <Route path="/group/:groupId/sondages/:pollId" element={<SondageDetails />} />
           <Route path="/amis" element={<Amis />} />

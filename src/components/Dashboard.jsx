@@ -320,11 +320,9 @@ const Dashboard = () => {
                       key={result.id}
                       onClick={() => {
                         if (result.groupId) {
-                          navigate(
-                            `/group/${result.groupId}/sondages/${result.id}`
-                          );
+                          navigate(`/group/${result.groupId}?tab=sondages`)
                         } else {
-                          navigate(`/group/${result.name}`);
+                          navigate(`/group/${result.groupId}`);
                         }
                         setShowSearchResults(false);
                       }}
@@ -371,12 +369,12 @@ const Dashboard = () => {
                   Voyages en cours
                 </h2>
 
-                <button
+                {/* <button
                   onClick={() => setShowCreateGroupModal(true)}
                   className="px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
                 >
                   Créer un groupe
-                </button>
+                </button> */}
 
                 {showCreateGroupModal && (
                   <CreateGroup onClose={() => setShowCreateGroupModal(false)} />
@@ -387,7 +385,7 @@ const Dashboard = () => {
                 {groups.map((group) => (
                   <div
                     key={group.id}
-                    onClick={() => navigate(`/group/${group.name}`)} // Navigate to the group page
+                    onClick={() => navigate(`/group/${group.id}`)} // Navigate to the group page
                     className="bg-white bg-opacity-90 rounded-xl p-6 transition-all hover:scale-105 hover:shadow-2xl border border-gray-200"
                   >
                     <h3 className="text-2xl font-bold text-black mb-4">
@@ -412,9 +410,7 @@ const Dashboard = () => {
                   <div
                     key={sondage.id}
                     onClick={() =>
-                      navigate(
-                        `/group/${sondage.groupId}/sondages/${sondage.id}`
-                      )
+                      navigate(`/group/${sondage.groupId}?tab=sondages`)
                     } // Navigate to the sondage page
                     className="bg-white bg-opacity-90 rounded-xl p-6 transition-all hover:scale-105 hover:shadow-2xl border border-gray-200"
                   >
@@ -499,7 +495,7 @@ const Dashboard = () => {
                               `/group/${result.groupId}/sondages/${result.id}`
                             );
                           } else {
-                            navigate(`/group/${result.name}`);
+                            navigate(`/group/${result.groupId}`);
                           }
                           setShowSearchResults(false);
                         }}

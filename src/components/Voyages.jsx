@@ -9,7 +9,8 @@ import {
   FiUser,
   FiUsers,
   FiX,
-  FiCalendar
+  FiCalendar,
+  FiSearch 
 } from "react-icons/fi";
 import { app } from "../config/firebase-config";
 import FlightSearchForm from "./FlightSearchForm";
@@ -225,51 +226,53 @@ const Voyages = () => {
 
       {/* Search Results */}
       {results.length > 0 && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60 backdrop-blur-lg p-6 transition-all duration-300 ease-out">
-          <div className="relative bg-white/90 shadow-2xl rounded-3xl p-8 w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden transform scale-95 animate-fadeIn">
-            {/* Close Button */}
+      <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-xl bg-black/50">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden animate-slideUp">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+              <FiSearch className="mr-3 text-blue-500" />
+              {results.length} résultats trouvés
+            </h2>
             <button
               onClick={() => setResults([])}
-              className="absolute top-6 right-6 text-gray-500 hover:text-gray-800 transition-all"
+              className="p-2 hover:bg-gray-50 rounded-full transition-colors"
             >
-              <FiX className="text-3xl" />
+              <FiX className="text-2xl text-gray-500 hover:text-gray-700" />
             </button>
+          </div>
 
-            {/* Title */}
-            <h2 className="text-3xl font-bold text-gray-800 text-center mb-6 tracking-tight">
-              ✈️ Meilleurs vols disponibles
-            </h2>
-
-            {/* Scrollable Results */}
-            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {results.map((offer, idx) => (
-                  <Link
-                    key={idx}
-                    to={`/voyage/${idx}`}
-                    state={{ offer }}
-                    className="block transform transition-transform duration-300 hover:scale-105"
-                  >
-                    <FlightResultCard key={idx} offer={offer} />
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="mt-6 flex justify-center">
-              <button
-                onClick={() => setResults([])}
-                className="px-6 py-3 bg-red-500 text-white text-lg font-semibold rounded-full shadow-md hover:bg-red-600 transition-all duration-300 ease-in-out transform hover:scale-105"
-              >
-                Fermer
-              </button>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {results.map((offer, idx) => (
+                <Link
+                  key={offer.id}
+                  to={`/voyage/${offer.id}`}
+                  state={{ offer }}
+                  className="group relative block transform transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="" />
+                  <FlightResultCard 
+                    offer={offer} 
+                    className="bg-white rounded-xl overflow-hidden shadow-md p-6 ${className}`"
+                  />
+                </Link>
+              ))}
             </div>
           </div>
+
+          <div className="p-4 border-t border-gray-100 flex justify-end">
+            <button
+              onClick={() => setResults([])}
+              className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+            >
+              Fermer les résultats
+            </button>
+          </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 };
 
 export default Voyages;
