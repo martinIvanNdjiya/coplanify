@@ -7,10 +7,8 @@ import {
   FiXCircle,
   FiArrowRight,
 } from "react-icons/fi";
-import { FaPaperPlane, FaShare } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  addDoc,
   collection,
   doc,
   getDocs,
